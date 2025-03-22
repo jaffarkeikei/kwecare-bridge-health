@@ -67,9 +67,12 @@ const UserDropdown = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
-          <UserIcon className="mr-2 h-4 w-4" />
-          <span>Profile</span>
+        <DropdownMenuItem 
+          className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary"
+          onClick={() => navigate("/settings")}
+        >
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
         </DropdownMenuItem>
         {!isProvider && (
           <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
@@ -78,8 +81,8 @@ const UserDropdown = () => {
           </DropdownMenuItem>
         )}
         <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
+          <UserIcon className="mr-2 h-4 w-4" />
+          <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
           <HelpCircle className="mr-2 h-4 w-4" />

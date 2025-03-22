@@ -12,6 +12,7 @@ import ProviderDashboard from "./pages/ProviderDashboard";
 import Appointments from "./pages/Appointments";
 import HealthRecords from "./pages/HealthRecords";
 import AIDiagnostics from "./pages/AIDiagnostics";
+import Settings from "./pages/Settings";
 import Features from "./pages/Features";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
@@ -99,6 +100,12 @@ const App = () => {
                 element={isAuthenticated ? 
                   (userType === "provider" ? <ProviderDashboard /> : <Navigate to="/dashboard" />)
                   : <Navigate to="/login" />} 
+              />
+              
+              {/* Settings Route - accessible to both user types */}
+              <Route 
+                path="/settings" 
+                element={isAuthenticated ? <Settings /> : <Navigate to="/login" />} 
               />
               
               {/* Catch-all route */}
