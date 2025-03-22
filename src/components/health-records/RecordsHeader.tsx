@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, FileText } from "lucide-react";
+import { ChevronLeft, FileText, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -31,6 +31,16 @@ const RecordsHeader: React.FC<RecordsHeaderProps> = ({ title, subtitle }) => {
           <ChevronLeft className="h-4 w-4 mr-1" />
           Dashboard
         </Button>
+        
+        <Button 
+          variant="outline"
+          onClick={() => navigate('/ai-diagnostics')}
+          className="hidden sm:flex"
+        >
+          <Brain className="h-4 w-4 mr-1" />
+          AI Diagnostics
+        </Button>
+        
         <Button 
           className="bg-kwecare-primary hover:bg-kwecare-primary/90"
           onClick={() => handleAddRecord("health")}

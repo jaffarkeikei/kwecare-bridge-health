@@ -1,13 +1,25 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/ui/layout/Header";
 import Footer from "@/components/ui/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, FileText, Globe, Heart, Laptop, MessageSquare, Phone, Shield, Stethoscope } from "lucide-react";
+import { AuthContext } from "@/App";
 
 const Features = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = React.useContext(AuthContext);
+  
+  const handleFeatureClick = (path: string, requiresAuth: boolean = true) => {
+    if (requiresAuth && !isAuthenticated) {
+      navigate('/login');
+    } else {
+      navigate(path);
+    }
+  };
+  
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30">
       <Header />
@@ -25,6 +37,8 @@ const Features = () => {
             icon={<Laptop className="h-12 w-12 text-kwecare-primary" />}
             title="Offline AI Diagnostics"
             description="Pre-loaded AI models provide symptom checking and health guidance, even without internet connectivity."
+            onClick={() => handleFeatureClick('/ai-diagnostics')}
+            clickable={true}
           />
           
           <FeatureCard 
@@ -43,6 +57,8 @@ const Features = () => {
             icon={<Shield className="h-12 w-12 text-kwecare-primary" />}
             title="Secure Health Records"
             description="Your medical data is stored securely and syncs automatically when connectivity is available."
+            onClick={() => handleFeatureClick('/health-records')}
+            clickable={true}
           />
           
           <FeatureCard 
@@ -116,15 +132,44 @@ const Features = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => {
+const FeatureCard = ({ 
+  icon, 
+  title, 
+  description, 
+  onClick,
+  clickable = false
+}: { 
+  icon: React.ReactNode;
+  title: string; 
+  description: string; 
+  onClick?: () => void;
+  clickable?: boolean;
+}) => {
   return (
-    <Card className="glass-card hover:border-kwecare-primary/20 transition-all duration-300 animate-fade-in">
+    <Card 
+      className={`glass-card hover:border-kwecare-primary/20 transition-all duration-300 animate-fade-in ${clickable ? 'cursor-pointer hover:shadow-md' : ''}`}
+      onClick={clickable ? onClick : undefined}
+    >
       <CardHeader className="pb-2">
         <div className="mb-4">{icon}</div>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <CardDescription className="text-base">{description}</CardDescription>
+        {clickable && (
+          <div className="mt-4">
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-kwecare-primary" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick && onClick();
+              }}
+            >
+              Try it now →
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
