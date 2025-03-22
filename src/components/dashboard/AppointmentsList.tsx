@@ -2,6 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Phone, Video } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Appointment {
   id: number;
@@ -17,6 +18,8 @@ interface AppointmentsListProps {
 }
 
 const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments }) => {
+  const navigate = useNavigate();
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "upcoming":
@@ -46,7 +49,12 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments }) => 
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold">Upcoming Appointments</h3>
-        <Button variant="outline" size="sm" className="text-xs">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-xs"
+          onClick={() => navigate('/appointments')}
+        >
           <Calendar className="mr-1 h-3 w-3" />
           View All
         </Button>

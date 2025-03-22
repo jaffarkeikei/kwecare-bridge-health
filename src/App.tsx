@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
+import Appointments from "./pages/Appointments";
+import HealthRecords from "./pages/HealthRecords";
 import Features from "./pages/Features";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
@@ -55,6 +57,14 @@ const App = () => {
               <Route 
                 path="/dashboard" 
                 element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/appointments" 
+                element={isAuthenticated ? <Appointments /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/health-records" 
+                element={isAuthenticated ? <HealthRecords /> : <Navigate to="/login" />} 
               />
               
               {/* Catch-all route */}

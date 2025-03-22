@@ -14,8 +14,11 @@ import { Button } from "@/components/ui/button";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import UserDropdown from "@/components/dashboard/UserDropdown";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  
   useEffect(() => {
     // Welcome toast when dashboard loads
     toast.success("Welcome back, Sarah!", {
@@ -50,6 +53,7 @@ const Dashboard = () => {
           <Button 
             variant="secondary" 
             className="bg-kwecare-primary text-white hover:bg-kwecare-primary/90 transition-all duration-300 shadow-sm hover:shadow-md"
+            onClick={() => {}} // Stay on current page
           >
             <BarChart3 className="mr-2 h-4 w-4" />
             Overview
@@ -57,6 +61,7 @@ const Dashboard = () => {
           <Button 
             variant="outline"
             className="transition-all duration-300 hover:border-kwecare-primary hover:text-kwecare-primary hover:bg-kwecare-primary/5"
+            onClick={() => navigate("/appointments")}
           >
             <CalendarClock className="mr-2 h-4 w-4" />
             Appointments
@@ -64,6 +69,7 @@ const Dashboard = () => {
           <Button 
             variant="outline"
             className="transition-all duration-300 hover:border-kwecare-primary hover:text-kwecare-primary hover:bg-kwecare-primary/5"  
+            onClick={() => navigate("/health-records")}
           >
             <FileText className="mr-2 h-4 w-4" />
             Health Records

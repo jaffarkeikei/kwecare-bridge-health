@@ -9,8 +9,11 @@ import {
   PlusCircle, 
   RefreshCw 
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const QuickActions = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="glass-card p-6">
       <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
@@ -19,6 +22,7 @@ const QuickActions = () => {
         <Button 
           variant="outline" 
           className="justify-start font-normal h-12 text-left hover:bg-kwecare-primary/5 hover:text-kwecare-primary hover:border-kwecare-primary/30"
+          onClick={() => navigate("/appointments")}
         >
           <CalendarPlus className="mr-2 h-4 w-4" />
           Schedule Appointment
@@ -43,9 +47,10 @@ const QuickActions = () => {
         <Button 
           variant="outline" 
           className="justify-start font-normal h-12 text-left hover:bg-kwecare-primary/5 hover:text-kwecare-primary hover:border-kwecare-primary/30"
+          onClick={() => navigate("/health-records")}
         >
           <FileText className="mr-2 h-4 w-4" />
-          View Test Results
+          View Health Records
         </Button>
         
         <Button 
