@@ -36,7 +36,7 @@ import {
   Syringe,
   Tablet,
   Thermometer,
-  Flask,
+  TestTube,
   ListPlus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -286,7 +286,7 @@ const HealthRecords = () => {
                   <span className="hidden sm:inline">Medications</span>
                 </TabsTrigger>
                 <TabsTrigger value="lab-results" className="flex items-center gap-1">
-                  <Flask className="h-4 w-4" />
+                  <TestTube className="h-4 w-4" />
                   <span className="hidden sm:inline">Lab Results</span>
                 </TabsTrigger>
                 <TabsTrigger value="immunizations" className="flex items-center gap-1">
