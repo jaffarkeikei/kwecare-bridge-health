@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,8 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { TensorflowContext } from "./ModelStatusIndicator";
+import { predictHealthRisks } from "@/utils/tensorflowModels";
 
 const HealthPredictions = () => {
+  const { healthModel, modelsLoaded } = useContext(TensorflowContext);
   const [analyzing, setAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [healthData, setHealthData] = useState({
@@ -39,46 +41,55 @@ const HealthPredictions = () => {
   
   const bmi = healthData.weight / Math.pow(healthData.height / 100, 2);
   
-  const analyzeHealth = () => {
+  const analyzeHealth = async () => {
+    if (!modelsLoaded || !healthModel) {
+      toast.error("TensorFlow models are still loading. Please wait.");
+      return;
+    }
+    
     setAnalyzing(true);
     
-    // Simulate AI processing
-    setTimeout(() => {
-      // Calculate diabetes risk (simplified algorithm for demo)
-      const diabetesRisk = calculateRisk(
-        healthData.bloodSugar / 100, // normalized blood sugar
-        bmi > 25 ? (bmi > 30 ? 0.3 : 0.2) : 0.1, // BMI factor
-        healthData.age > 40 ? 0.15 : 0.05, // age factor
-      );
+    try {
+      const riskPredictions = await predictHealthRisks(healthModel, healthData);
       
-      // Calculate hypertension risk
-      const hypertensionRisk = calculateRisk(
-        (healthData.systolic - 110) / 40, // normalized systolic
-        (healthData.diastolic - 70) / 20, // normalized diastolic
-        healthData.age > 50 ? 0.2 : 0.1, // age factor
-      );
+      let adjustedRisks = { ...riskPredictions };
       
-      // Calculate heart disease risk
-      const heartRisk = calculateRisk(
-        (healthData.cholesterol - 150) / 100, // normalized cholesterol
-        hypertensionRisk * 0.5, // hypertension contribution
-        bmi > 25 ? (bmi > 30 ? 0.25 : 0.15) : 0.05, // BMI factor
-      );
+      if (bmi > 30) {
+        adjustedRisks.diabetes = Math.min(adjustedRisks.diabetes + 0.2, 0.95);
+        adjustedRisks.hypertension = Math.min(adjustedRisks.hypertension + 0.15, 0.95);
+        adjustedRisks.heartDisease = Math.min(adjustedRisks.heartDisease + 0.15, 0.95);
+      } else if (bmi > 25) {
+        adjustedRisks.diabetes = Math.min(adjustedRisks.diabetes + 0.1, 0.95);
+        adjustedRisks.hypertension = Math.min(adjustedRisks.hypertension + 0.05, 0.95);
+        adjustedRisks.heartDisease = Math.min(adjustedRisks.heartDisease + 0.05, 0.95);
+      }
       
-      setRisks({
-        diabetes: Math.min(Math.max(diabetesRisk, 0.05), 0.95),
-        hypertension: Math.min(Math.max(hypertensionRisk, 0.05), 0.95),
-        heartDisease: Math.min(Math.max(heartRisk, 0.05), 0.95),
-      });
+      if (healthData.systolic > 140) {
+        adjustedRisks.hypertension = Math.min(adjustedRisks.hypertension + 0.25, 0.95);
+      }
       
+      if (healthData.bloodSugar > 126) {
+        adjustedRisks.diabetes = Math.min(adjustedRisks.diabetes + 0.3, 0.95);
+      }
+      
+      if (healthData.cholesterol > 240) {
+        adjustedRisks.heartDisease = Math.min(adjustedRisks.heartDisease + 0.25, 0.95);
+      }
+      
+      adjustedRisks = {
+        diabetes: Math.max(adjustedRisks.diabetes, 0.05),
+        hypertension: Math.max(adjustedRisks.hypertension, 0.05),
+        heartDisease: Math.max(adjustedRisks.heartDisease, 0.05)
+      };
+      
+      setRisks(adjustedRisks);
       setAnalyzing(false);
       setShowResults(true);
-    }, 2000);
-  };
-  
-  // Helper function to calculate risk with multiple factors
-  const calculateRisk = (...factors: number[]) => {
-    return factors.reduce((acc, factor) => acc + factor, 0) / factors.length;
+    } catch (error) {
+      console.error("Error analyzing health data:", error);
+      toast.error("An error occurred while analyzing health data");
+      setAnalyzing(false);
+    }
   };
   
   const resetAnalysis = () => {
@@ -94,7 +105,6 @@ const HealthPredictions = () => {
   const getRecommendations = () => {
     const recommendations = [];
     
-    // Diabetes recommendations
     if (risks.diabetes > 0.3) {
       recommendations.push("Monitor blood sugar levels regularly");
       if (risks.diabetes > 0.6) {
@@ -102,7 +112,6 @@ const HealthPredictions = () => {
       }
     }
     
-    // Hypertension recommendations
     if (risks.hypertension > 0.3) {
       recommendations.push("Monitor blood pressure regularly");
       if (risks.hypertension > 0.6) {
@@ -110,12 +119,10 @@ const HealthPredictions = () => {
       }
     }
     
-    // Heart disease recommendations
     if (risks.heartDisease > 0.3) {
       recommendations.push("Consider having your cholesterol checked regularly");
     }
     
-    // General recommendations
     if (bmi > 25) {
       recommendations.push("Consider physical activity and dietary changes to achieve a healthier weight");
     }
@@ -133,10 +140,10 @@ const HealthPredictions = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-kwecare-primary" />
-            Health Risk Assessment
+            TensorFlow.js Health Risk Assessment
           </CardTitle>
           <CardDescription>
-            Evaluate your risk for common health conditions based on your vital measurements
+            Evaluate your risk for common health conditions using machine learning
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -352,18 +359,23 @@ const HealthPredictions = () => {
           <CardFooter>
             <Button 
               onClick={analyzeHealth}
-              disabled={analyzing}
+              disabled={analyzing || !modelsLoaded}
               className="w-full bg-kwecare-primary hover:bg-kwecare-primary/90"
             >
               {analyzing ? (
                 <>
                   <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
+                  Analyzing with TensorFlow.js...
+                </>
+              ) : !modelsLoaded ? (
+                <>
+                  <BarChart2 className="h-4 w-4 mr-2" />
+                  Waiting for TensorFlow.js...
                 </>
               ) : (
                 <>
                   <BarChart2 className="h-4 w-4 mr-2" />
-                  Analyze Health Data
+                  Analyze Health Data with TensorFlow.js
                 </>
               )}
             </Button>

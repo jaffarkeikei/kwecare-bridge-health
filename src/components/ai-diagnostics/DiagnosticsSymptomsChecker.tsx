@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,8 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { TensorflowContext } from "./ModelStatusIndicator";
+import { encodeSymptoms, predictConditions } from "@/utils/tensorflowModels";
 
 // Sample symptoms
 const COMMON_SYMPTOMS = [
@@ -17,6 +18,7 @@ const COMMON_SYMPTOMS = [
 ];
 
 const DiagnosticsSymptomsChecker = () => {
+  const { symptomModel, modelsLoaded } = useContext(TensorflowContext);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [customSymptom, setCustomSymptom] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -43,92 +45,79 @@ const DiagnosticsSymptomsChecker = () => {
     }
   };
 
-  const analyzeSymptoms = () => {
+  const analyzeSymptoms = async () => {
     if (symptoms.length === 0) {
       toast.error("Please add at least one symptom");
       return;
     }
 
+    if (!modelsLoaded || !symptomModel) {
+      toast.error("TensorFlow models are still loading. Please wait.");
+      return;
+    }
+
     setAnalyzing(true);
     
-    // Simulate AI processing
-    setTimeout(() => {
-      // Mock result - in a real app, this would be from the TensorFlow model
-      let mockResult = {
-        possibleConditions: [] as Array<{condition: string, probability: number}>,
-        recommendedActions: [] as string[],
-        severity: "low" as "low" | "medium" | "high"
-      };
+    try {
+      // Encode symptoms for the model
+      const encodedSymptoms = encodeSymptoms(symptoms, COMMON_SYMPTOMS);
       
-      // Logic to generate different results based on symptoms
+      // Get predictions from the model
+      const predictions = await predictConditions(symptomModel, encodedSymptoms);
+      
+      // Filter predictions to only include those with reasonable probability
+      const filteredPredictions = predictions
+        .filter(p => p.probability > 0.15)
+        .slice(0, 4); // Take top 4 predictions
+      
+      // Determine severity based on symptoms and predicted conditions
+      let severity: "low" | "medium" | "high" = "low";
+      
+      if (symptoms.includes("Shortness of breath") || symptoms.includes("Chest pain")) {
+        severity = "high";
+      } else if (symptoms.includes("Fever") && (symptoms.includes("Cough") || symptoms.includes("Fatigue"))) {
+        severity = "medium";
+      }
+      
+      // Generate appropriate recommendations based on symptoms and severity
+      const recommendedActions: string[] = [];
+      
+      if (severity === "high") {
+        recommendedActions.push("Seek immediate medical attention");
+      }
+      
       if (symptoms.includes("Fever")) {
-        if (symptoms.includes("Cough") && symptoms.includes("Fatigue")) {
-          mockResult.possibleConditions.push(
-            {condition: "Common Cold", probability: 0.65},
-            {condition: "Influenza", probability: 0.45},
-            {condition: "COVID-19", probability: 0.30}
-          );
-          mockResult.recommendedActions = [
-            "Rest and stay hydrated",
-            "Take acetaminophen or ibuprofen for fever",
-            "Monitor symptoms for 48 hours",
-            "Consider seeing a healthcare provider if symptoms worsen"
-          ];
-          mockResult.severity = "medium";
-        } else {
-          mockResult.possibleConditions.push(
-            {condition: "Viral Infection", probability: 0.75},
-            {condition: "Bacterial Infection", probability: 0.35}
-          );
-          mockResult.recommendedActions = [
-            "Rest and hydrate",
-            "Take fever-reducing medication if needed",
-            "Monitor temperature"
-          ];
-          mockResult.severity = "low";
-        }
+        recommendedActions.push("Rest and stay hydrated", "Take acetaminophen or ibuprofen for fever");
       }
       
       if (symptoms.includes("Headache")) {
-        mockResult.possibleConditions.push(
-          {condition: "Tension Headache", probability: 0.55},
-          {condition: "Migraine", probability: 0.25}
-        );
-        mockResult.recommendedActions.push(
-          "Rest in a quiet, dark room",
-          "Consider over-the-counter pain relievers"
-        );
+        recommendedActions.push("Rest in a quiet, dark room", "Consider over-the-counter pain relievers");
       }
       
-      if (symptoms.includes("Shortness of breath")) {
-        mockResult.possibleConditions.push(
-          {condition: "Respiratory Infection", probability: 0.60},
-          {condition: "Asthma", probability: 0.40},
-          {condition: "Anxiety", probability: 0.35}
-        );
-        mockResult.recommendedActions = [
-          "Seek immediate medical attention if severe",
-          "Use prescribed inhaler if you have asthma",
-          "Practice deep breathing exercises if mild"
-        ];
-        mockResult.severity = "high";
+      if (severity === "medium") {
+        recommendedActions.push("Monitor symptoms for 48 hours", "Consider seeing a healthcare provider if symptoms worsen");
+      } else if (severity === "low") {
+        recommendedActions.push("Monitor your symptoms", "Rest as needed");
       }
       
-      // Make sure we have at least some basic result
-      if (mockResult.possibleConditions.length === 0) {
-        mockResult.possibleConditions.push(
-          {condition: "Minor Health Issue", probability: 0.65},
-        );
-        mockResult.recommendedActions = [
-          "Monitor your symptoms",
-          "Rest as needed",
-          "Contact healthcare provider if symptoms persist or worsen"
-        ];
-      }
+      // Add a generic recommendation
+      recommendedActions.push("Contact healthcare provider if symptoms persist or worsen");
       
-      setResult(mockResult);
+      // Remove duplicates from recommendations
+      const uniqueRecommendations = [...new Set(recommendedActions)];
+      
+      setResult({
+        possibleConditions: filteredPredictions,
+        recommendedActions: uniqueRecommendations,
+        severity
+      });
+
+    } catch (error) {
+      console.error("Error analyzing symptoms:", error);
+      toast.error("An error occurred while analyzing symptoms");
+    } finally {
       setAnalyzing(false);
-    }, 2500);
+    }
   };
   
   const resetAnalysis = () => {
@@ -142,10 +131,10 @@ const DiagnosticsSymptomsChecker = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-kwecare-primary" />
-            AI Symptom Checker
+            TensorFlow.js Symptom Checker
           </CardTitle>
           <CardDescription>
-            Select your symptoms for an AI-powered health assessment, even without internet connection
+            Select your symptoms for a TensorFlow.js powered health assessment, even without internet connection
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -301,18 +290,23 @@ const DiagnosticsSymptomsChecker = () => {
           <CardFooter>
             <Button 
               onClick={analyzeSymptoms}
-              disabled={symptoms.length === 0 || analyzing}
+              disabled={symptoms.length === 0 || analyzing || !modelsLoaded}
               className="w-full bg-kwecare-primary hover:bg-kwecare-primary/90"
             >
               {analyzing ? (
                 <>
                   <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
+                  Analyzing with TensorFlow.js...
+                </>
+              ) : !modelsLoaded ? (
+                <>
+                  <Brain className="h-4 w-4 mr-2" />
+                  Waiting for TensorFlow.js...
                 </>
               ) : (
                 <>
                   <Brain className="h-4 w-4 mr-2" />
-                  Analyze Symptoms
+                  Analyze Symptoms with TensorFlow.js
                 </>
               )}
             </Button>

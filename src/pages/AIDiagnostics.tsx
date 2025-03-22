@@ -21,13 +21,13 @@ const AIDiagnostics = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold">AI Diagnostics</h1>
+              <h1 className="text-3xl font-bold">TensorFlow.js Diagnostics</h1>
               <Badge variant="outline" className="bg-green-100/50 text-green-700 border-green-200">
                 Offline Available
               </Badge>
             </div>
             <p className="text-muted-foreground mt-1">
-              AI-powered health analysis that works even without internet
+              TensorFlow.js-powered health analysis that works locally in your browser
             </p>
           </div>
           
@@ -45,18 +45,18 @@ const AIDiagnostics = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 animate-fade-in">
             <DiagnosticToolCard 
               icon={<Stethoscope className="h-10 w-10 text-kwecare-primary" />}
-              title="Symptom Checker"
-              description="Analyze your symptoms and get AI-powered health recommendations even offline."
+              title="TensorFlow.js Symptom Checker"
+              description="Analyze your symptoms with a browser-based neural network that works offline."
               onClick={() => setActiveTool("symptoms")}
-              badge="Local AI"
+              badge="TensorFlow.js"
             />
             
             <DiagnosticToolCard 
               icon={<Activity className="h-10 w-10 text-kwecare-primary" />}
-              title="Health Predictions"
-              description="Identify risks for diabetes, hypertension and other conditions based on your health data."
+              title="TensorFlow.js Health Predictions"
+              description="Identify risks for diabetes, hypertension and other conditions using machine learning."
               onClick={() => setActiveTool("predictions")}
-              badge="Pre-loaded Model"
+              badge="Neural Network"
             />
           </div>
         ) : (
