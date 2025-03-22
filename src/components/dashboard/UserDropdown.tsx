@@ -23,17 +23,20 @@ import { AuthContext } from "@/App";
 
 const UserDropdown = () => {
   const navigate = useNavigate();
-  const { setIsAuthenticated, userType } = useContext(AuthContext);
+  const { setIsAuthenticated, userType, setUserType } = useContext(AuthContext);
 
   const handleLogout = () => {
     // Clear auth state and session storage
     setIsAuthenticated(false);
+    setUserType(""); // Reset the user type
+    
+    // Clear all storage locations
     localStorage.removeItem("kwecare_session");
     localStorage.removeItem("kwecare_user_type");
     sessionStorage.removeItem("kwecare_session");
     sessionStorage.removeItem("kwecare_user_type");
     
-    toast.success("Successfully logged out");
+    toast.success(`Successfully logged out of your ${userType} account`);
     navigate("/login");
   };
 
@@ -44,7 +47,12 @@ const UserDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="rounded-full h-10 w-10 transition-all hover:border-kwecare-primary hover:bg-kwecare-primary/5">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="rounded-full h-10 w-10 transition-all hover:border-kwecare-primary hover:bg-kwecare-primary/5"
+          aria-label="User menu"
+        >
           {isProvider ? <Stethoscope className="h-4 w-4" /> : <UserIcon className="h-4 w-4" />}
         </Button>
       </DropdownMenuTrigger>
