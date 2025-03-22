@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Features from "./pages/Features";
+import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import { useState, useEffect, createContext } from "react";
 
@@ -46,6 +47,7 @@ const App = () => {
               {/* Public Routes - Accessible to everyone */}
               <Route path="/" element={<Index />} />
               <Route path="/features" element={<Features />} />
+              <Route path="/about" element={<About />} />
               <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
               <Route path="/signup" element={isAuthenticated ? <Navigate to="/dashboard" /> : <SignUp />} />
               
