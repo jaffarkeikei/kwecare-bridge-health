@@ -6,7 +6,7 @@ import QuickActions from "./QuickActions";
 import HealthCharts from "./HealthCharts";
 import AIDiagnosticsWidget from "./AIDiagnosticsWidget";
 import ModelStatusIndicator from "../ai-diagnostics/ModelStatusIndicator";
-import { Activity, Calendar, Heart, BarChart2 } from "lucide-react";
+import { Activity, Calendar, Heart, BarChart2, Globe } from "lucide-react";
 
 const DashboardOverview = () => {
   // Sample health metrics data
@@ -36,12 +36,12 @@ const DashboardOverview = () => {
       icon: <BarChart2 className="h-5 w-5 text-blue-500" />,
     },
     {
-      title: "Upcoming Check",
-      value: "Nov 15",
+      title: "Cultural Safety",
+      value: "Enabled",
       unit: "",
       change: "",
-      status: "upcoming",
-      icon: <Calendar className="h-5 w-5 text-purple-500" />,
+      status: "normal",
+      icon: <Globe className="h-5 w-5 text-purple-500" />,
     },
   ];
 
