@@ -1,0 +1,76 @@
+
+import React from "react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { 
+  Bell,
+  CreditCard, 
+  HelpCircle,
+  LogOut, 
+  Settings, 
+  User as UserIcon
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
+const UserDropdown = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // In a real app, you would clear auth state, tokens, etc.
+    toast.success("Successfully logged out");
+    navigate("/login");
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="icon" className="rounded-full h-10 w-10 transition-all hover:border-kwecare-primary hover:bg-kwecare-primary/5">
+          <UserIcon className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56 animate-scale-in" align="end">
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">Sarah Johnson</p>
+            <p className="text-xs leading-none text-muted-foreground">sarah.johnson@example.com</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
+          <UserIcon className="mr-2 h-4 w-4" />
+          <span>Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
+          <CreditCard className="mr-2 h-4 w-4" />
+          <span>Billing</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
+          <HelpCircle className="mr-2 h-4 w-4" />
+          <span>Help</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          className="cursor-pointer text-red-500 hover:text-red-600 hover:bg-red-50"
+          onClick={handleLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Logout</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export default UserDropdown;

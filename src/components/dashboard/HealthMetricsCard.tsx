@@ -1,8 +1,9 @@
 
 import React from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { cva } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
-interface HealthMetric {
+interface MetricProps {
   title: string;
   value: string;
   unit: string;
@@ -12,61 +13,77 @@ interface HealthMetric {
 }
 
 interface HealthMetricsCardProps {
-  metric: HealthMetric;
+  metric: MetricProps;
 }
 
+const statusVariants = cva("text-xs font-medium", {
+  variants: {
+    status: {
+      normal: "text-green-500",
+      warning: "text-amber-500",
+      alert: "text-red-500",
+      upcoming: "text-blue-500",
+    },
+  },
+  defaultVariants: {
+    status: "normal",
+  },
+});
+
+const cardVariants = cva(
+  "glass-card p-4 rounded-xl flex flex-col transition-all duration-300 hover:shadow-md animate-fade-in", 
+  {
+    variants: {
+      status: {
+        normal: "hover:border-green-200 hover:bg-green-50/30",
+        warning: "hover:border-amber-200 hover:bg-amber-50/30",
+        alert: "hover:border-red-200 hover:bg-red-50/30",
+        upcoming: "hover:border-blue-200 hover:bg-blue-50/30",
+      },
+    },
+    defaultVariants: {
+      status: "normal",
+    },
+  }
+);
+
 const HealthMetricsCard: React.FC<HealthMetricsCardProps> = ({ metric }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "normal":
-        return "text-green-500";
-      case "warning":
-        return "text-amber-500";
-      case "alert":
-        return "text-red-500";
-      case "upcoming":
-        return "text-blue-500";
-      default:
-        return "text-gray-500";
-    }
-  };
-
-  const statusColor = getStatusColor(metric.status);
-
   return (
-    <div className="glass-card p-4 card-hover-effect">
-      <div className="flex items-start justify-between mb-2">
-        <div className="font-medium text-sm text-foreground/80">
-          {metric.title}
-        </div>
-        <div className="p-1.5 rounded-full bg-background/70">
+    <div className={cn(cardVariants({ status: metric.status as any }))}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm text-muted-foreground">{metric.title}</span>
+        <div className="p-2 bg-white rounded-full shadow-sm">
           {metric.icon}
         </div>
       </div>
       
-      <div className="flex items-end">
-        <div className="text-2xl font-semibold">{metric.value}</div>
-        {metric.unit && <div className="ml-1 mb-0.5 text-sm text-muted-foreground">{metric.unit}</div>}
+      <div className="flex items-end justify-between mt-1">
+        <div className="flex items-baseline">
+          <span className="text-xl font-bold">{metric.value}</span>
+          {metric.unit && (
+            <span className="text-xs ml-1 text-muted-foreground">{metric.unit}</span>
+          )}
+        </div>
+        
+        {metric.change && (
+          <div className="flex items-center">
+            <span 
+              className={`text-xs ${metric.change.startsWith('+') ? 'text-green-500' : 
+                metric.change.startsWith('-') ? 'text-red-500' : 'text-muted-foreground'}`}
+            >
+              {metric.change}
+            </span>
+          </div>
+        )}
       </div>
       
-      {metric.change && (
-        <div className="flex items-center mt-2">
-          {parseFloat(metric.change) > 0 ? (
-            <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
-          ) : (
-            <ArrowDown className="h-3 w-3 text-blue-500 mr-1" />
-          )}
-          <span className="text-xs">
-            {metric.change} from last reading
-          </span>
-        </div>
-      )}
-      
-      <div className={`mt-2 text-xs ${statusColor}`}>
-        {metric.status === "normal" && "Within normal range"}
-        {metric.status === "warning" && "Slightly elevated"}
-        {metric.status === "alert" && "Requires attention"}
-        {metric.status === "upcoming" && "Scheduled"}
+      <div className="mt-2">
+        <span className={cn(statusVariants({ status: metric.status as any }))}>
+          {metric.status === "normal" && "Normal Range"}
+          {metric.status === "warning" && "Requires Attention"}
+          {metric.status === "alert" && "Out of Range"}
+          {metric.status === "upcoming" && "Scheduled"}
+        </span>
       </div>
     </div>
   );
