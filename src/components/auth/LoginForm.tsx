@@ -1,22 +1,26 @@
+
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, User, Stethoscope } from "lucide-react";
 import { AuthContext } from "@/App";
+
 const LoginForm = () => {
   const navigate = useNavigate();
-  const {
-    setIsAuthenticated
-  } = useContext(AuthContext);
+  const { setIsAuthenticated } = useContext(AuthContext);
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginType, setLoginType] = useState<"patient" | "provider">("patient");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -29,20 +33,47 @@ const LoginForm = () => {
     setTimeout(() => {
       setIsLoading(false);
 
-      // Store session data
+      // Store session data and user type
       if (rememberMe) {
         localStorage.setItem("kwecare_session", "active");
+        localStorage.setItem("kwecare_user_type", loginType);
       } else {
         sessionStorage.setItem("kwecare_session", "active");
+        sessionStorage.setItem("kwecare_user_type", loginType);
       }
 
       // Update auth context
       setIsAuthenticated(true);
-      toast.success("Login successful");
-      navigate("/dashboard");
+      toast.success(`${loginType === 'provider' ? 'Healthcare provider' : 'Patient'} login successful`);
+      
+      // Redirect based on user type
+      if (loginType === "provider") {
+        navigate("/provider-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     }, 1500);
   };
-  return <div className="animate-fade-in">
+
+  return (
+    <div className="animate-fade-in">
+      <Tabs 
+        value={loginType} 
+        onValueChange={(value) => setLoginType(value as "patient" | "provider")}
+        className="mb-6"
+      >
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="patient" className="flex items-center justify-center gap-2">
+            <User className="h-4 w-4" />
+            <span>Patient</span>
+          </TabsTrigger>
+          <TabsTrigger value="provider" className="flex items-center justify-center gap-2">
+            <Stethoscope className="h-4 w-4" />
+            <span>Healthcare Provider</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
@@ -74,12 +105,18 @@ const LoginForm = () => {
         </div>
         
         <Button type="submit" disabled={isLoading} className="w-full bg-blue-500 hover:bg-blue-400">
-          {isLoading ? <>
+          {isLoading ? (
+            <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Signing in...
-            </> : "Sign in"}
+            </>
+          ) : (
+            `Sign in as ${loginType === 'provider' ? 'Healthcare Provider' : 'Patient'}`
+          )}
         </Button>
       </form>
-    </div>;
+    </div>
+  );
 };
+
 export default LoginForm;

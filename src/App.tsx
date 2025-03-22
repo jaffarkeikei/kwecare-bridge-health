@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
+import ProviderDashboard from "./pages/ProviderDashboard";
 import Appointments from "./pages/Appointments";
 import HealthRecords from "./pages/HealthRecords";
 import AIDiagnostics from "./pages/AIDiagnostics";
@@ -19,7 +20,9 @@ import { useState, useEffect, createContext } from "react";
 // Create context for auth state
 export const AuthContext = createContext({
   isAuthenticated: false,
-  setIsAuthenticated: (value: boolean) => {}
+  setIsAuthenticated: (value: boolean) => {},
+  userType: "",
+  setUserType: (value: string) => {}
 });
 
 const queryClient = new QueryClient();
@@ -27,13 +30,17 @@ const queryClient = new QueryClient();
 const App = () => {
   // In a real app, this would check localStorage, cookies, or an API
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userType, setUserType] = useState("");
   
-  // Check if user is logged in when app loads (simulated)
+  // Check if user is logged in when app loads
   useEffect(() => {
     // This is a simplified example - real apps would verify tokens, etc.
     const checkAuth = () => {
-      const hasSession = localStorage.getItem("kwecare_session");
+      const hasSession = localStorage.getItem("kwecare_session") || sessionStorage.getItem("kwecare_session");
+      const userTypeValue = localStorage.getItem("kwecare_user_type") || sessionStorage.getItem("kwecare_user_type") || "patient";
+      
       setIsAuthenticated(!!hasSession);
+      setUserType(userTypeValue);
     };
     
     checkAuth();
@@ -41,7 +48,7 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
+      <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, userType, setUserType }}>
         <BrowserRouter>
           <TooltipProvider>
             <Toaster />
@@ -51,25 +58,47 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/features" element={<Features />} />
               <Route path="/about" element={<About />} />
-              <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-              <Route path="/signup" element={isAuthenticated ? <Navigate to="/dashboard" /> : <SignUp />} />
+              <Route path="/login" element={isAuthenticated ? 
+                (userType === "provider" ? <Navigate to="/provider-dashboard" /> : <Navigate to="/dashboard" />)
+                : <Login />} 
+              />
+              <Route path="/signup" element={isAuthenticated ? 
+                (userType === "provider" ? <Navigate to="/provider-dashboard" /> : <Navigate to="/dashboard" />)
+                : <SignUp />} 
+              />
               
-              {/* Protected Routes - Require authentication */}
+              {/* Protected Patient Routes */}
               <Route 
                 path="/dashboard" 
-                element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
+                element={isAuthenticated ? 
+                  (userType === "provider" ? <Navigate to="/provider-dashboard" /> : <Dashboard />)
+                  : <Navigate to="/login" />} 
               />
               <Route 
                 path="/appointments" 
-                element={isAuthenticated ? <Appointments /> : <Navigate to="/login" />} 
+                element={isAuthenticated ? 
+                  (userType === "provider" ? <Navigate to="/provider-dashboard" /> : <Appointments />)
+                  : <Navigate to="/login" />} 
               />
               <Route 
                 path="/health-records" 
-                element={isAuthenticated ? <HealthRecords /> : <Navigate to="/login" />} 
+                element={isAuthenticated ? 
+                  (userType === "provider" ? <Navigate to="/provider-dashboard" /> : <HealthRecords />)
+                  : <Navigate to="/login" />} 
               />
               <Route 
                 path="/ai-diagnostics" 
-                element={isAuthenticated ? <AIDiagnostics /> : <Navigate to="/login" />} 
+                element={isAuthenticated ? 
+                  (userType === "provider" ? <Navigate to="/provider-dashboard" /> : <AIDiagnostics />)
+                  : <Navigate to="/login" />} 
+              />
+              
+              {/* Protected Provider Routes */}
+              <Route 
+                path="/provider-dashboard" 
+                element={isAuthenticated ? 
+                  (userType === "provider" ? <ProviderDashboard /> : <Navigate to="/dashboard" />)
+                  : <Navigate to="/login" />} 
               />
               
               {/* Catch-all route */}

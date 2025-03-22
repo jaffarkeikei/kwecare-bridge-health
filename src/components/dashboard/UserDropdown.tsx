@@ -14,7 +14,8 @@ import {
   HelpCircle,
   LogOut, 
   Settings, 
-  User as UserIcon
+  User as UserIcon,
+  Stethoscope
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -22,30 +23,39 @@ import { AuthContext } from "@/App";
 
 const UserDropdown = () => {
   const navigate = useNavigate();
-  const { setIsAuthenticated } = useContext(AuthContext);
+  const { setIsAuthenticated, userType } = useContext(AuthContext);
 
   const handleLogout = () => {
     // Clear auth state and session storage
     setIsAuthenticated(false);
     localStorage.removeItem("kwecare_session");
+    localStorage.removeItem("kwecare_user_type");
     sessionStorage.removeItem("kwecare_session");
+    sessionStorage.removeItem("kwecare_user_type");
     
     toast.success("Successfully logged out");
     navigate("/login");
   };
 
+  const isProvider = userType === "provider";
+  const displayName = isProvider ? "Dr. Michael Chen" : "Sarah Johnson";
+  const email = isProvider ? "dr.chen@example.com" : "sarah.johnson@example.com";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="rounded-full h-10 w-10 transition-all hover:border-kwecare-primary hover:bg-kwecare-primary/5">
-          <UserIcon className="h-4 w-4" />
+          {isProvider ? <Stethoscope className="h-4 w-4" /> : <UserIcon className="h-4 w-4" />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 animate-scale-in" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Sarah Johnson</p>
-            <p className="text-xs leading-none text-muted-foreground">sarah.johnson@example.com</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
+            <p className="text-xs leading-none text-muted-foreground">{email}</p>
+            <p className="text-xs leading-none text-kwecare-primary mt-1">
+              {isProvider ? "Healthcare Provider" : "Patient"}
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -53,10 +63,12 @@ const UserDropdown = () => {
           <UserIcon className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
-          <CreditCard className="mr-2 h-4 w-4" />
-          <span>Billing</span>
-        </DropdownMenuItem>
+        {!isProvider && (
+          <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Billing</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-kwecare-primary/5 hover:text-kwecare-primary">
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
