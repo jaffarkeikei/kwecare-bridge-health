@@ -6,8 +6,7 @@ import {
   Calendar, 
   FileText, 
   Brain, 
-  Globe,
-  ChevronRight 
+  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
