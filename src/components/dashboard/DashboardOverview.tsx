@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import HealthMetricsCard from "./HealthMetricsCard";
 import AppointmentsList from "./AppointmentsList";
 import QuickActions from "./QuickActions";
 import HealthCharts from "./HealthCharts";
 import AIDiagnosticsWidget from "./AIDiagnosticsWidget";
+import WeeklySurveysWidget from "./WeeklySurveysWidget";
 import ModelStatusIndicator from "../ai-diagnostics/ModelStatusIndicator";
 import { Activity, Calendar, Heart, BarChart2, Globe } from "lucide-react";
 import { Appointment } from "@/types/appointment";
@@ -121,6 +123,8 @@ const DashboardOverview = () => {
         </div>
         
         <div className="space-y-6">
+          <WeeklySurveysWidget />
+          
           <AIDiagnosticsWidget />
           
           <div className="glass-card p-6">

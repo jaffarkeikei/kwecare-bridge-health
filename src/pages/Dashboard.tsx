@@ -6,7 +6,8 @@ import {
   Calendar, 
   FileText, 
   Brain, 
-  Globe
+  Globe, 
+  ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,8 +20,9 @@ import AppointmentsTab from "@/components/dashboard/AppointmentsTab";
 import HealthRecordsTab from "@/components/dashboard/HealthRecordsTab";
 import AIDiagnosticsTab from "@/components/dashboard/AIDiagnosticsTab";
 import CulturalSafetyTab from "@/components/cultural-safety/CulturalSafetyTab";
+import SurveysTab from "@/components/dashboard/SurveysTab";
 
-type DashboardTab = "overview" | "appointments" | "health-records" | "ai-diagnostics" | "cultural-safety";
+type DashboardTab = "overview" | "appointments" | "health-records" | "ai-diagnostics" | "cultural-safety" | "surveys";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
@@ -37,6 +39,8 @@ const Dashboard = () => {
         return <AIDiagnosticsTab />;
       case "cultural-safety":
         return <CulturalSafetyTab />;
+      case "surveys":
+        return <SurveysTab />;
       default:
         return <DashboardOverview />;
     }
@@ -59,7 +63,7 @@ const Dashboard = () => {
             onValueChange={(value) => setActiveTab(value as DashboardTab)}
             className="mb-8"
           >
-            <TabsList className="grid grid-cols-3 md:grid-cols-5 gap-2">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2">
               <TabsTrigger value="overview" className="gap-2">
                 <Home className="h-4 w-4" />
                 <span className="hidden md:inline">Overview</span>
@@ -79,6 +83,10 @@ const Dashboard = () => {
               <TabsTrigger value="cultural-safety" className="gap-2">
                 <Globe className="h-4 w-4" />
                 <span className="hidden md:inline">Cultural Safety</span>
+              </TabsTrigger>
+              <TabsTrigger value="surveys" className="gap-2">
+                <ClipboardCheck className="h-4 w-4" />
+                <span className="hidden md:inline">Surveys</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
