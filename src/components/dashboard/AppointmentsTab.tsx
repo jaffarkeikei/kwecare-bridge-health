@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { Calendar, Clock, User, Stethoscope, ArrowLeft, Video, Phone, MapPin } from "lucide-react";
+import { Calendar, Clock, User, Stethoscope, ArrowLeft, Video, Phone, MapPin, Plus } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Appointment } from "@/types/appointment";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
-// Sample appointment data with our new type
 const appointments: Appointment[] = [
   {
     id: 1,
@@ -66,18 +65,16 @@ const appointments: Appointment[] = [
 ];
 
 const AppointmentsTab = () => {
+  const navigate = useNavigate();
   const [selectedAppointment, setSelectedAppointment] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "details">("list");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Simulate loading the appointments
   useEffect(() => {
     setIsLoading(true);
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      // Simulate a potential error (5% chance)
       if (Math.random() < 0.05) {
         setError("Failed to load appointments. Please try again.");
       }
@@ -104,6 +101,11 @@ const AppointmentsTab = () => {
 
   const handleCancel = (id: number) => {
     toast.info(`Cancelling appointment #${id}`);
+  };
+
+  const handleScheduleNew = () => {
+    navigate('/appointments');
+    toast.success("Opening appointment scheduler");
   };
 
   const getStatusBadge = (status: string) => {
@@ -161,82 +163,104 @@ const AppointmentsTab = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center space-x-2 mb-6">
-        <Calendar className="h-6 w-6 text-kwecare-primary" />
-        <h2 className="text-2xl font-bold">Appointments</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <Calendar className="h-6 w-6 text-kwecare-primary" />
+          <h2 className="text-2xl font-bold">Appointments</h2>
+        </div>
+        <Button onClick={handleScheduleNew} variant="branded">
+          <Plus className="h-4 w-4 mr-1" />
+          Schedule New
+        </Button>
       </div>
 
       {viewMode === "list" ? (
         <div className="grid gap-4">
-          {appointments.map((appointment) => (
-            <Card key={appointment.id} className="glass-card hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">{appointment.title}</h3>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <User className="h-4 w-4 mr-1" />
-                      <span>{appointment.doctor}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Stethoscope className="h-4 w-4 mr-1" />
-                      <span>{appointment.specialty}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Clock className="h-4 w-4 mr-1 text-kwecare-primary" />
-                      <span>{appointment.time}</span>
-                    </div>
-                    {appointment.location && (
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        <span>{appointment.location}</span>
+          {appointments.length === 0 ? (
+            <Card className="glass-card p-8 text-center">
+              <CardContent className="pt-6">
+                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Appointments</h3>
+                <p className="text-muted-foreground mb-6">You don't have any upcoming appointments scheduled.</p>
+                <Button onClick={handleScheduleNew} variant="default">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Schedule Appointment
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {appointments.map((appointment) => (
+                <Card key={appointment.id} className="glass-card hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">{appointment.title}</h3>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <User className="h-4 w-4 mr-1" />
+                          <span>{appointment.doctor}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Stethoscope className="h-4 w-4 mr-1" />
+                          <span>{appointment.specialty}</span>
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <Clock className="h-4 w-4 mr-1 text-kwecare-primary" />
+                          <span>{appointment.time}</span>
+                        </div>
+                        {appointment.location && (
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            <span>{appointment.location}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  {getStatusBadge(appointment.status)}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewAppointment(appointment.id)}
-                  >
-                    View Details
-                  </Button>
-                  
-                  {appointment.status === "upcoming" && appointment.type === "telemedicine" && (
-                    <Button 
-                      size="sm"
-                      onClick={() => handleJoinCall(appointment.id)}
-                    >
-                      <Video className="mr-1 h-4 w-4" />
-                      Join Call
-                    </Button>
-                  )}
-                  
-                  {(appointment.status === "upcoming" || appointment.status === "scheduled") && (
-                    <>
+                      {getStatusBadge(appointment.status)}
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleReschedule(appointment.id)}
+                        onClick={() => handleViewAppointment(appointment.id)}
                       >
-                        Reschedule
+                        View Details
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleCancel(appointment.id)}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                      
+                      {appointment.status === "upcoming" && appointment.type === "telemedicine" && (
+                        <Button 
+                          size="sm"
+                          onClick={() => handleJoinCall(appointment.id)}
+                        >
+                          <Video className="mr-1 h-4 w-4" />
+                          Join Call
+                        </Button>
+                      )}
+                      
+                      {(appointment.status === "upcoming" || appointment.status === "scheduled") && (
+                        <>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReschedule(appointment.id)}
+                          >
+                            Reschedule
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleCancel(appointment.id)}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="glass-card p-6">
@@ -349,6 +373,17 @@ const AppointmentsTab = () => {
           )}
         </div>
       )}
+      
+      <div className="flex justify-end gap-3 mt-8">
+        <Button variant="outline" onClick={() => navigate('/appointments')}>
+          <Calendar className="h-4 w-4 mr-1" />
+          View Calendar
+        </Button>
+        <Button variant="branded" onClick={handleScheduleNew}>
+          <Plus className="h-4 w-4 mr-1" />
+          Schedule New
+        </Button>
+      </div>
     </div>
   );
 };

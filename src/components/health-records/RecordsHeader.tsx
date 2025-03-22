@@ -42,7 +42,7 @@ const RecordsHeader: React.FC<RecordsHeaderProps> = ({ title, subtitle }) => {
         </Button>
         
         <Button 
-          className="bg-kwecare-primary hover:bg-kwecare-primary/90"
+          variant="branded"
           onClick={() => handleAddRecord("health")}
         >
           <FileText className="h-4 w-4 mr-1" />

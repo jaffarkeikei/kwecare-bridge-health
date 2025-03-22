@@ -31,11 +31,6 @@ const HealthRecordsTab = () => {
         <FileText className="h-6 w-6 text-kwecare-primary" />
         <h2 className="text-2xl font-bold">Health Records</h2>
       </div>
-
-      <RecordsHeader 
-        title="Health Records" 
-        subtitle="View and manage your medical information" 
-      />
       
       <Card className="glass-card">
         <CardHeader>
@@ -85,7 +80,7 @@ const HealthRecordsTab = () => {
       
       <div className="flex justify-end gap-3">
         <Button variant="outline">Export Records</Button>
-        <Button>Request Medical Records</Button>
+        <Button variant="branded">Request Medical Records</Button>
       </div>
     </div>
   );
