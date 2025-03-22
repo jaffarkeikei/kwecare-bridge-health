@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { FileText, Pill, Flask, Shield } from "lucide-react";
+import { FileText, Pill, TestTube, Shield } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,18 @@ import RecordsHeader from "@/components/health-records/RecordsHeader";
 
 const HealthRecordsTab = () => {
   const [activeRecordTab, setActiveRecordTab] = useState("medications");
+  const [searchQueries, setSearchQueries] = useState({
+    medications: "",
+    "lab-results": "",
+    immunizations: ""
+  });
+
+  const handleSearch = (tab: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQueries(prev => ({
+      ...prev,
+      [tab]: e.target.value
+    }));
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -20,7 +32,10 @@ const HealthRecordsTab = () => {
         <h2 className="text-2xl font-bold">Health Records</h2>
       </div>
 
-      <RecordsHeader />
+      <RecordsHeader 
+        title="Health Records" 
+        subtitle="View and manage your medical information" 
+      />
       
       <Card className="glass-card">
         <CardHeader>
@@ -35,7 +50,7 @@ const HealthRecordsTab = () => {
                 <span>Medications</span>
               </TabsTrigger>
               <TabsTrigger value="lab-results" className="flex items-center gap-2">
-                <Flask className="h-4 w-4" />
+                <TestTube className="h-4 w-4" />
                 <span>Lab Results</span>
               </TabsTrigger>
               <TabsTrigger value="immunizations" className="flex items-center gap-2">
@@ -45,15 +60,24 @@ const HealthRecordsTab = () => {
             </TabsList>
 
             <TabsContent value="medications" className="mt-0">
-              <MedicationsList />
+              <MedicationsList 
+                searchQuery={searchQueries.medications} 
+                onSearch={handleSearch} 
+              />
             </TabsContent>
             
             <TabsContent value="lab-results" className="mt-0">
-              <LabResultsList />
+              <LabResultsList 
+                searchQuery={searchQueries["lab-results"]} 
+                onSearch={handleSearch} 
+              />
             </TabsContent>
             
             <TabsContent value="immunizations" className="mt-0">
-              <ImmunizationsList />
+              <ImmunizationsList 
+                searchQuery={searchQueries.immunizations} 
+                onSearch={handleSearch} 
+              />
             </TabsContent>
           </Tabs>
         </CardHeader>
