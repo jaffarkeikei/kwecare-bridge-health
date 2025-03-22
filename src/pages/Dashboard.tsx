@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { 
   Home, 
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/ui/layout/Header";
 import Footer from "@/components/ui/layout/Footer";
+import VoiceCommandButton from "@/components/cultural-safety/VoiceCommandButton";
 
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 // Import detailed tab components
@@ -26,6 +27,19 @@ type DashboardTab = "overview" | "appointments" | "health-records" | "ai-diagnos
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
+
+  // Listen for custom events to set the active tab (used by voice command)
+  useEffect(() => {
+    const handleSetActiveTab = (event: CustomEvent<{ tab: DashboardTab }>) => {
+      setActiveTab(event.detail.tab);
+    };
+    
+    window.addEventListener("set-active-tab", handleSetActiveTab as EventListener);
+    
+    return () => {
+      window.removeEventListener("set-active-tab", handleSetActiveTab as EventListener);
+    };
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -56,7 +70,10 @@ const Dashboard = () => {
         <Header />
 
         <main className="flex-1 pt-28 px-4 md:px-6 pb-16 w-full max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">My Dashboard</h1>
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold">My Dashboard</h1>
+            <VoiceCommandButton />
+          </div>
 
           <Tabs 
             value={activeTab} 
