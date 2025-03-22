@@ -3,19 +3,22 @@ import * as tf from '@tensorflow/tfjs';
 
 // This is a simple symptom-based model that uses a basic neural network
 // In a real app, you would use a pre-trained model or train a more sophisticated one
-export const createSymptomModel = async (): Promise<tf.LayersModel> => {
+export const createSymptomModel = async (simplified = false): Promise<tf.LayersModel> => {
   // Simple model for symptom analysis - in real app, you would load a pre-trained model
   const model = tf.sequential();
+  
+  // For simplified model, use smaller architecture
+  const hiddenUnits = simplified ? 8 : 16;
   
   // Input layer - assuming we encode symptoms as binary features (1 = present, 0 = not present)
   model.add(tf.layers.dense({
     inputShape: [12], // Common symptoms count (fever, headache, cough, etc.)
-    units: 16, 
+    units: hiddenUnits, 
     activation: 'relu'
   }));
   
   model.add(tf.layers.dense({
-    units: 8,
+    units: simplified ? 4 : 8,
     activation: 'relu'
   }));
   
@@ -37,19 +40,22 @@ export const createSymptomModel = async (): Promise<tf.LayersModel> => {
   return model;
 };
 
-export const createHealthPredictionModel = async (): Promise<tf.LayersModel> => {
+export const createHealthPredictionModel = async (simplified = false): Promise<tf.LayersModel> => {
   // Simple model for health metrics analysis
   const model = tf.sequential();
+  
+  // For simplified model, use smaller architecture
+  const hiddenUnits = simplified ? 6 : 12;
   
   // Input layer for health metrics (age, bp, bmi, etc.)
   model.add(tf.layers.dense({
     inputShape: [7], // Number of health metrics
-    units: 12, 
+    units: hiddenUnits, 
     activation: 'relu'
   }));
   
   model.add(tf.layers.dense({
-    units: 8,
+    units: simplified ? 4 : 8,
     activation: 'relu'
   }));
   

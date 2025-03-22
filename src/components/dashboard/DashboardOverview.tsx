@@ -4,6 +4,8 @@ import HealthMetricsCard from "./HealthMetricsCard";
 import AppointmentsList from "./AppointmentsList";
 import QuickActions from "./QuickActions";
 import HealthCharts from "./HealthCharts";
+import AIDiagnosticsWidget from "./AIDiagnosticsWidget";
+import ModelStatusIndicator from "../ai-diagnostics/ModelStatusIndicator";
 import { Activity, Calendar, Heart, BarChart2 } from "lucide-react";
 
 const DashboardOverview = () => {
@@ -73,8 +75,11 @@ const DashboardOverview = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
+      {/* AI Model Status Indicator */}
+      <ModelStatusIndicator />
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             {healthMetrics.map((metric, index) => (
               <HealthMetricsCard key={index} metric={metric} />
@@ -86,8 +91,12 @@ const DashboardOverview = () => {
           <QuickActions />
         </div>
         
-        <div className="glass-card p-6">
-          <AppointmentsList appointments={appointments} />
+        <div className="space-y-6">
+          <AIDiagnosticsWidget />
+          
+          <div className="glass-card p-6">
+            <AppointmentsList appointments={appointments} />
+          </div>
         </div>
       </div>
     </div>
