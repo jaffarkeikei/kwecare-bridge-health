@@ -38,10 +38,10 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <BrowserRouter>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
             <Routes>
               {/* Public Routes - Accessible to everyone */}
               <Route path="/" element={<Index />} />
@@ -58,8 +58,8 @@ const App = () => {
               {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+          </TooltipProvider>
+        </BrowserRouter>
       </AuthContext.Provider>
     </QueryClientProvider>
   );

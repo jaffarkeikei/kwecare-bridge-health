@@ -65,23 +65,23 @@ const Features = () => {
           </p>
           
           <div className="flex flex-wrap justify-center gap-4">
-            <Button 
-              as={Link} 
-              to="/signup" 
-              size="lg"
-              className="bg-kwecare-primary hover:bg-kwecare-primary/90"
-            >
-              Create an Account
-            </Button>
-            <Button 
-              as={Link} 
-              to="/login"
-              variant="outline" 
-              size="lg"
-              className="hover:border-kwecare-primary hover:text-kwecare-primary"
-            >
-              Sign In
-            </Button>
+            <Link to="/signup">
+              <Button 
+                size="lg"
+                className="bg-kwecare-primary hover:bg-kwecare-primary/90"
+              >
+                Create an Account
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="hover:border-kwecare-primary hover:text-kwecare-primary"
+              >
+                Sign In
+              </Button>
+            </Link>
           </div>
         </div>
         
