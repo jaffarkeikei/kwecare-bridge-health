@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useContext } from "react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { 
-  Bell,
   CreditCard, 
   HelpCircle,
   LogOut, 
@@ -19,12 +18,18 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { AuthContext } from "@/App";
 
 const UserDropdown = () => {
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useContext(AuthContext);
 
   const handleLogout = () => {
-    // In a real app, you would clear auth state, tokens, etc.
+    // Clear auth state and session storage
+    setIsAuthenticated(false);
+    localStorage.removeItem("kwecare_session");
+    sessionStorage.removeItem("kwecare_session");
+    
     toast.success("Successfully logged out");
     navigate("/login");
   };

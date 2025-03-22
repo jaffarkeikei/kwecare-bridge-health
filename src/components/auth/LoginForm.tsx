@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { AuthContext } from "@/App";
 
 const LoginForm = () => {
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -29,6 +31,17 @@ const LoginForm = () => {
     // Simulating API request
     setTimeout(() => {
       setIsLoading(false);
+      
+      // Store session data
+      if (rememberMe) {
+        localStorage.setItem("kwecare_session", "active");
+      } else {
+        sessionStorage.setItem("kwecare_session", "active");
+      }
+      
+      // Update auth context
+      setIsAuthenticated(true);
+      
       toast.success("Login successful");
       navigate("/dashboard");
     }, 1500);

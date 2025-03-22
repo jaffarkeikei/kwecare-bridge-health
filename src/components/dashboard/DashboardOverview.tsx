@@ -3,6 +3,7 @@ import React from "react";
 import HealthMetricsCard from "./HealthMetricsCard";
 import AppointmentsList from "./AppointmentsList";
 import QuickActions from "./QuickActions";
+import HealthCharts from "./HealthCharts";
 import { Activity, Calendar, Heart, BarChart2 } from "lucide-react";
 
 const DashboardOverview = () => {
@@ -79,6 +80,8 @@ const DashboardOverview = () => {
               <HealthMetricsCard key={index} metric={metric} />
             ))}
           </div>
+          
+          <HealthCharts />
           
           <QuickActions />
         </div>
