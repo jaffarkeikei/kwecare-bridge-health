@@ -180,6 +180,17 @@ const AnalyticsSection = () => {
     }, 1000);
   };
 
+  // Handle export data
+  const handleExportData = () => {
+    toast.loading("Preparing data export...");
+    
+    // Simulate API call to export data (would be a real API call in production)
+    setTimeout(() => {
+      toast.dismiss();
+      toast.success("Data exported successfully");
+    }, 1000);
+  };
+
   // Handle downloading the report as PDF
   const handleDownloadReport = () => {
     toast.loading("Downloading report as PDF...");
@@ -436,6 +447,19 @@ const AnalyticsSection = () => {
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
           Generate Detailed Report
+        </button>
+        
+        <button
+          onClick={handleExportData}
+          className="mx-3 px-8 py-3 bg-green-600 text-white rounded-md font-medium inline-flex items-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+            <path d="M21 14V8a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v6" />
+            <path d="M21 14H3" />
+            <path d="M7 19h10" />
+            <path d="M12 14v5" />
+          </svg>
+          Export Data
         </button>
       </div>
       

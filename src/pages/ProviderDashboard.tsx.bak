@@ -1250,6 +1250,11 @@ const ProviderDashboard = () => {
                 </CardContent>
               </Card>
               
+              <div className="mt-6 flex justify-center">
+                <Button onClick={handleGenerateReport}>
+                  Generate Detailed Report
+                </Button>
+              </div>
               
               <div className="mt-6 flex justify-center gap-3">
                 <Button onClick={handleGenerateReport}>
