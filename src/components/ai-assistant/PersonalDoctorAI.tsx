@@ -256,52 +256,92 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     }
   };
 
-  // Prebuilt suggestion chips for common questions
-  const baseQuestions = {
-    diabetes: [
-      "How can I lower my blood sugar?",
-      "What foods should I avoid with diabetes?",
-      "Can exercise help with my blood sugar levels?"
-    ],
-    hypertension: [
-      "What lifestyle changes help with blood pressure?",
-      "How can I reduce my sodium intake?",
-      "Is my current blood pressure reading concerning?"
-    ],
-    medications: [
-      "Are there any side effects I should watch for?",
-      "When should I take my medications?",
-      "Can I take these medications with food?"
-    ],
-    general: [
-      "How can I improve my overall health?",
-      "When should I schedule my next checkup?",
-      "What symptoms should I watch out for?"
-    ]
-  };
-
-  // Function to generate contextual suggestions based on the latest response
+  // Function to generate contextual suggestions based on patient data and user's question
   const getContextualSuggestions = () => {
-    if (messages.length === 0) return baseQuestions.general;
+    // Default suggestions based on patient's medical conditions
+    const patientConditionSuggestions = [] as string[];
     
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage.role !== 'assistant') return baseQuestions.general;
+    // Add suggestions based on patient's medical conditions
+    mockPatientData.conditions.forEach(condition => {
+      if (condition.toLowerCase().includes('diabetes')) {
+        patientConditionSuggestions.push(
+          "How can I lower my blood sugar naturally?",
+          "What foods are best for my diabetes?",
+          "How does exercise affect my blood sugar?"
+        );
+      }
+      if (condition.toLowerCase().includes('hypertension')) {
+        patientConditionSuggestions.push(
+          "What lifestyle changes help with blood pressure?",
+          "How can I monitor my blood pressure at home?",
+          "What foods help lower blood pressure?"
+        );
+      }
+    });
     
-    const content = lastMessage.content.toLowerCase();
+    // Add suggestions based on patient's medications
+    const medicationSuggestions = mockPatientData.medications.map(med => 
+      `What should I know about ${med.name}?`
+    );
     
-    if (content.includes('diabetes') || content.includes('blood sugar') || content.includes('glucose')) {
-      return baseQuestions.diabetes;
-    } else if (content.includes('blood pressure') || content.includes('hypertension')) {
-      return baseQuestions.hypertension;
-    } else if (content.includes('medication') || content.includes('medicine') || content.includes('drug')) {
-      return baseQuestions.medications;
+    // Combine all suggestions
+    const allSuggestions = [
+      ...patientConditionSuggestions,
+      ...medicationSuggestions,
+      "When should I schedule my next checkup?",
+      "What preventive screenings do I need?",
+      "How can I improve my overall health?"
+    ];
+    
+    // If there's a user question, try to provide contextual follow-ups
+    if (messages.length > 0) {
+      const lastUserMessage = [...messages].reverse().find(msg => msg.role === 'user');
+      
+      if (lastUserMessage) {
+        const query = lastUserMessage.content.toLowerCase();
+        
+        // Specific follow-up suggestions based on current topic
+        if (query.includes('diabetes') || query.includes('blood sugar') || query.includes('glucose')) {
+          return [
+            "What's a healthy blood sugar range for me?",
+            "How often should I check my blood sugar?",
+            "Can stress affect my blood sugar levels?"
+          ];
+        } else if (query.includes('blood pressure') || query.includes('hypertension')) {
+          return [
+            "Is my current blood pressure reading concerning?",
+            "How does salt impact my blood pressure?",
+            "What time of day should I take my blood pressure medicine?"
+          ];
+        } else if (query.includes('medication') || query.includes('medicine') || query.includes('drug')) {
+          return [
+            "Are there any side effects I should watch for?",
+            "Should I take my medications with food?",
+            "Can I take these medications together?"
+          ];
+        } else if (query.includes('diet') || query.includes('food') || query.includes('eat')) {
+          return [
+            "What foods should I limit with my conditions?",
+            "Are there specific diets good for diabetes?",
+            "How many meals should I eat per day?"
+          ];
+        } else if (query.includes('exercise') || query.includes('activity') || query.includes('workout')) {
+          return [
+            "What exercises are safe with my conditions?",
+            "How often should I exercise?",
+            "Can exercise replace medication?"
+          ];
+        }
+      }
     }
     
-    return baseQuestions.general;
+    // If we don't have context-specific suggestions, use a random selection from all suggestions
+    const shuffled = [...allSuggestions].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3);
   };
 
   // Get current three suggestions
-  const currentSuggestions = getContextualSuggestions().slice(0, 3);
+  const currentSuggestions = getContextualSuggestions();
 
   // Handle sending a suggestion
   const handleSendSuggestion = (suggestion: string) => {
