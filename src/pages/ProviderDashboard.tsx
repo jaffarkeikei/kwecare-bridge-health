@@ -2464,7 +2464,7 @@ const ProviderDashboard = () => {
       // Generate and download PDF
       setTimeout(() => {
         handleDownloadAsPdf("patient-report-content", `patient-report-${patient.name.replace(/\s+/g, '-').toLowerCase()}.pdf`, false);
-        toast.dismiss();
+      toast.dismiss();
         toast.success(`Report for ${patient.name} downloaded successfully`);
       }, 800);
     }, 1500);
@@ -3241,17 +3241,17 @@ const ProviderDashboard = () => {
             )}
           </div>
           
-
+          
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setPatientReportModalOpen(false)}>
               Close
             </Button>
             {!generatingPatientReport && selectedPatientForReport && (
               <>
-                <Button onClick={() => generatePatientReportPDF(selectedPatientForReport)}>
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Download Report
-                </Button>
+              <Button onClick={() => generatePatientReportPDF(selectedPatientForReport)}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Download Report
+              </Button>
                 <Button onClick={() => handleExportPatientData(selectedPatientForReport)} className="bg-green-600 hover:bg-green-700 text-white border-green-600">
                   <Download className="h-4 w-4 mr-2" />
                   Export Data
