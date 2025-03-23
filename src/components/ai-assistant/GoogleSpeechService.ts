@@ -405,34 +405,37 @@ class GoogleSpeechService {
   
   // Preprocess text to improve speech quality
   private preprocessTextForSpeech(text: string): string {
-    // Replace bullet points with numbers
-    let processedText = text;
+    // Remove HTML tags
+    text = text.replace(/<[^>]*>/g, '');
     
-    // Replace bullet points with numbered list
-    let bulletCount = 1;
-    processedText = processedText.replace(/\*/g, () => {
-      return `${bulletCount++}. `;
+    // Remove any "1. AI:" prefix
+    text = text.replace(/^(?:1\. )?AI:\s*/i, '');
+    
+    // Replace bullet points with ordinals
+    const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", 
+                      "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"];
+    let bulletCount = 0;
+    
+    text = text.replace(/\n\s*\*\s*/g, () => {
+      const ordinal = bulletCount < ordinals.length 
+        ? ordinals[bulletCount] 
+        : `Item ${bulletCount + 1}`;
+      bulletCount++;
+      return `\n${ordinal}, `;
     });
     
+    // Add pauses after punctuation for better rhythm
+    text = text.replace(/([.!?])\s/g, '$1, ');
+    
     // Improve pronunciation of common abbreviations
-    processedText = processedText.replace(/Dr\./g, "Doctor ");
-    processedText = processedText.replace(/Mr\./g, "Mister ");
-    processedText = processedText.replace(/Mrs\./g, "Misses ");
-    processedText = processedText.replace(/Ms\./g, "Miss ");
-    processedText = processedText.replace(/Ph\.D\./g, "P H D ");
-    processedText = processedText.replace(/M\.D\./g, "M D ");
+    text = text.replace(/Dr\./g, "Doctor ");
+    text = text.replace(/Mr\./g, "Mister ");
+    text = text.replace(/Mrs\./g, "Misses ");
+    text = text.replace(/Ms\./g, "Miss ");
+    text = text.replace(/Ph\.D\./g, "P H D ");
+    text = text.replace(/M\.D\./g, "M D ");
     
-    // Add pauses for better rhythm
-    processedText = processedText.replace(/([.!?])\s+/g, "$1. ");
-    
-    // Replace difficult symbols
-    processedText = processedText.replace(/%/g, " percent ");
-    processedText = processedText.replace(/&/g, " and ");
-    processedText = processedText.replace(/\+/g, " plus ");
-    processedText = processedText.replace(/-/g, " ");
-    processedText = processedText.replace(/\//g, " or ");
-    
-    return processedText;
+    return text;
   }
   
   // Method to check if speaking

@@ -106,61 +106,32 @@ interface PersonalDoctorAIProps {
 
 // Helper function to format message content with better styling
 const formatMessageContent = (content: string) => {
+  // Handle empty content
   if (!content) return '';
   
-  // Trim content to remove any leading/trailing whitespace
-  content = content.trim();
+  // Remove any bullet points at the beginning of the message
+  content = content.replace(/^[•\*]\s*/, '');
   
-  // Remove any leading tab or spaces from each line
-  content = content.replace(/^[ \t]+/gm, '');
+  // Replace AI: prefix if present - remove completely (handle more variations)
+  content = content.replace(/^(?:1\. )?(?:AI|AI:)\s*:?\s*/i, '');
   
-  // Format section headers (e.g., **Breakfast:**)
-  content = content.replace(/\*\*(.*?):\*\*/g, '<h3 class="font-semibold text-primary my-2 text-left">$1:</h3>');
+  // Replace newlines with breaks for better readability
+  content = content.replace(/\n/g, '<br />');
   
   // Format bullet points with proper spacing and styling
-  content = content.replace(/\* (.*?)(?=\n|$)/g, (match, innerText, offset, fullText) => {
-    // Count previous bullet points to determine the number
-    const previousBullets = fullText.substring(0, offset).match(/\* /g) || [];
-    const number = previousBullets.length + 1;
-    return `<li class="ml-5 pl-1 text-left"><span class="font-semibold">${number}.</span> ${innerText}</li>`;
+  content = content.replace(/[•\*]\s*(.*?)(?=<br \/>|$)/g, (match, innerText) => {
+    return `<li class="ml-5 pl-1 text-left">${innerText}</li>`;
   });
   
   // Wrap bullet point lists in ul tags
-  content = content.replace(/<li.*?>(.*?)<\/li>(\s*<li.*?>.*?<\/li>)*/gs, '<ul class="my-2 text-left">$&</ul>');
-  
-  // Add special styling for meal plan sections
-  content = content.replace(/<h3.*?>(Breakfast|Lunch|Dinner|Snacks):(.*?)<\/h3>/g, 
-    '<div class="meal-plan-section text-left"><h3 class="font-semibold text-primary my-1 text-left">$1:$2</h3>');
-  
-  // Close the meal plan sections
-  content = content.replace(/<h3.*?>((?!Breakfast|Lunch|Dinner|Snacks).+?):(.*?)<\/h3>/g, 
-    '</div><h3 class="font-semibold text-primary my-1 text-left">$1:$2</h3>');
-    
-  // Fix any unclosed meal plan sections at the end
-  if (content.includes('<div class="meal-plan-section') && 
-      !content.endsWith('</div>')) {
-    content += '</div>';
+  if (content.includes('<li class="ml-5 pl-1 text-left">')) {
+    content = content.replace(
+      /(<li class="ml-5 pl-1 text-left">.*?<\/li>(?:<br \/>)?)+/g,
+      match => `<ul class="list-disc my-2">${match.replace(/<br \/>/g, '')}</ul>`
+    );
   }
   
-  // Format nutritional information with badges
-  content = content.replace(/\((\d+\s*(calories|kcal|g protein|g carbs|g fat))\)/gi, 
-    '<span class="nutrient-info text-left">$1</span>');
-  
-  // Format paragraphs
-  const paragraphs = content.split('\n\n').filter(p => p.trim());
-  if (paragraphs.length > 1) {
-    return '<div class="ai-message-content text-content-left">' + 
-           paragraphs.map(p => {
-             // Don't double-wrap elements already wrapped in tags
-             if (p.trim().startsWith('<') && p.trim().endsWith('>')) {
-               return p;
-             }
-             return `<p class="mb-3 text-left">${p.trim()}</p>`;
-           }).join('') + 
-           '</div>';
-  }
-  
-  return '<div class="ai-message-content text-content-left">' + content + '</div>';
+  return content;
 };
 
 // Add this to the type declarations
@@ -616,9 +587,12 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
         { temperature: 0.7 }
       );
       
-      // Clean up response: remove "AI:" prefix and "Hello Sarah," greeting
-      let cleanedResponse = aiResponse.replace(/^AI:\s*/i, '');
-      cleanedResponse = cleanedResponse.replace(/^Hello Sarah,\s*/i, '');
+      // Clean up response thoroughly
+      // Remove "AI:" prefix, numbered prefixes, and "Hello Sarah," greeting
+      let cleanedResponse = aiResponse
+        .replace(/^(?:1\. )?(?:AI|AI:)\s*:?\s*/i, '') // Remove AI: prefix with variations
+        .replace(/^Hello Sarah,?\s*/i, '')  // Remove greeting
+        .replace(/^[•\*]\s*/, '');  // Remove leading bullet points
       
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,

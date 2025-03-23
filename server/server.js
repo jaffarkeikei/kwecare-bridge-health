@@ -60,16 +60,36 @@ app.post('/api/tts', async (req, res) => {
     // Clean up text - remove any "Hello Sarah" prefixes
     const cleanedText = text.replace(/^(Hello Sarah,?\s*)/i, '');
     
-    // Replace asterisk bullet points with numbered points for better TTS reading
-    const numberedText = cleanedText.replace(/\n\s*\*\s*/g, (match, index, fullText) => {
-      // Count how many asterisks have appeared before this one to determine number
+    // Remove any "1. AI:" prefix
+    const withoutAIPrefix = cleanedText.replace(/^(?:1\. )?AI:\s*/i, '');
+    
+    // Replace asterisk bullet points with ordinals for better TTS reading
+    const withOrdinals = withoutAIPrefix.replace(/\n\s*\*\s*/g, (match, index, fullText) => {
+      // Count how many asterisks have appeared before this one
       const previousAsterisks = fullText.substring(0, index).match(/\n\s*\*\s*/g) || [];
-      const number = previousAsterisks.length + 1;
-      return `\n${number}. `;
+      const count = previousAsterisks.length;
+      
+      // Convert count to ordinal word
+      let ordinal;
+      switch(count) {
+        case 0: ordinal = "First, "; break;
+        case 1: ordinal = "Second, "; break;
+        case 2: ordinal = "Third, "; break;
+        case 3: ordinal = "Fourth, "; break;
+        case 4: ordinal = "Fifth, "; break;
+        case 5: ordinal = "Sixth, "; break;
+        case 6: ordinal = "Seventh, "; break;
+        case 7: ordinal = "Eighth, "; break;
+        case 8: ordinal = "Ninth, "; break;
+        case 9: ordinal = "Tenth, "; break;
+        default: ordinal = `Item ${count + 1}, `;
+      }
+      
+      return `\n${ordinal}`;
     });
     
-    // Replace "AI:" prefix if present
-    const finalText = numberedText.replace(/^AI:\s*/i, '');
+    // Final processed text
+    const finalText = withOrdinals;
     
     // Configure voice based on the selected type
     let voiceConfig;
