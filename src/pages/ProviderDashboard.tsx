@@ -24,7 +24,14 @@ import {
   MessagesSquare,
   Brain,
   CalendarClock,
-  Download
+  Download,
+  Eye,
+  FileDown,
+  Copy,
+  FileOutput,
+  BookOpen,
+  ChevronRight,
+  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +70,8 @@ import { Circle, Filter, RefreshCcw, Search as SearchIcon, Send, Star, Trash } f
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter } from "@/components/ui/dialog";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 type ProviderTab = "dashboard" | "patients" | "appointments" | "records" | "analytics" | "messages";
 
@@ -99,6 +108,17 @@ const ProviderDashboard = () => {
     recommendations: ReturnType<typeof generateAIRecommendations>,
     nextSteps: ReturnType<typeof generateNextSteps>,
     timestamp: string
+  } | null>(null);
+  const [patientReportModalOpen, setPatientReportModalOpen] = useState(false);
+  const [selectedPatientForReport, setSelectedPatientForReport] = useState<(typeof patients)[0] | null>(null);
+  const [generatingPatientReport, setGeneratingPatientReport] = useState(false);
+  const [patientReportData, setPatientReportData] = useState<{
+    vitalsTrend: any[];
+    medicationAdherence: number;
+    communityInsights: string[];
+    culturalConsiderations: string[];
+    treatmentRecommendations: any[];
+    aiNotes: string;
   } | null>(null);
 
   // Mockup data for patients
@@ -850,6 +870,73 @@ const ProviderDashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
+              <h3 className="text-lg font-semibold mb-4">Patient Records</h3>
+              <div className="space-y-4 mb-6">
+                {patients.map(patient => (
+                  <Card key={patient.id} className="overflow-hidden border-l-4" style={{
+                    borderLeftColor: patient.status === "stable" ? "#10b981" : 
+                                    patient.status === "improving" ? "#3b82f6" : 
+                                    patient.status === "monitoring" ? "#f59e0b" : 
+                                    "#ef4444"
+                  }}>
+                    <CardContent className="p-4">
+                      <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-start gap-2">
+                            <h3 className="text-lg font-semibold">{patient.name}</h3>
+                            {patient.alerts > 0 && (
+                              <Badge variant="destructive" className="rounded-full h-5 w-5 p-0 flex items-center justify-center">
+                                {patient.alerts}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2 mt-2">
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Age:</span> {patient.age}
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Last Visit:</span> {patient.lastVisit}
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Next Visit:</span> {patient.nextVisit}
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Community:</span> {patient.community}
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Status:</span> {getStatusBadge(patient.status)}
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Adherence:</span> {getAdherenceBadge(patient.adherence)}
+                            </div>
+                          </div>
+                          <div className="mt-3">
+                            <div className="text-sm font-medium">Conditions:</div>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {patient.conditions.map((condition, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {condition}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-row md:flex-col gap-2 justify-end">
+                          <Button variant="outline" size="sm" className="gap-1" onClick={() => generatePatientReport(patient)}>
+                            <Eye className="h-4 w-4" />
+                            <span className="hidden sm:inline">Preview Report</span>
+                          </Button>
+                          <Button variant="default" size="sm" className="gap-1 bg-kwecare-primary hover:bg-kwecare-primary/90" onClick={() => generatePatientReport(patient)}>
+                            <FileOutput className="h-4 w-4" />
+                            <span className="hidden sm:inline">Generate Report</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+                
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-muted/30 p-5 rounded-lg">
                   <h3 className="font-medium mb-3 flex items-center gap-2">
@@ -1422,66 +1509,299 @@ const ProviderDashboard = () => {
     ];
   };
 
+  // Create a hidden container for PDF export
+  const [pdfContentReady, setPdfContentReady] = useState(false);
+
+  // Modify the handleGenerateReport function to generate and download directly
   const handleGenerateReport = () => {
-    setGeneratingReport(true);
-    setReportModalOpen(true);
+    // Generate report data without opening the dialog
+    toast.loading("Generating comprehensive report...");
+    
+    // Generate the recommendations and steps
+    const recommendations = generateAIRecommendations();
+    const nextSteps = generateNextSteps();
+    
+    // Set the report data
+    setReportData({
+      recommendations,
+      nextSteps,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Set a flag to indicate content is ready for rendering
+    setPdfContentReady(true);
+    
+    // Let the DOM update with new content before generating PDF
+    setTimeout(() => {
+      // Generate and download the PDF
+      handleDownloadAsPdf("analytics-report-content", `kwecare-analytics-report-${new Date().toISOString().split('T')[0]}.pdf`, true);
+    }, 500);
+  };
+
+  // Modify the handleDownloadAsPdf function to better handle complex content
+  const handleDownloadAsPdf = (elementId: string, filename: string, clearContentAfter: boolean = false) => {
+    const element = document.getElementById(elementId);
+    if (!element) {
+      toast.error("Could not generate PDF: Report content not available");
+      return;
+    }
+
+    // Configure element for better capture
+    const originalDisplay = element.style.display;
+    const originalPosition = element.style.position;
+    const originalZIndex = element.style.zIndex;
+    const originalOpacity = element.style.opacity;
+    const originalWidth = element.style.width;
+    const originalHeight = element.style.height;
+    const originalOverflow = element.style.overflow;
+    const originalVisibility = element.style.visibility;
+    const originalLeft = element.style.left;
+    
+    // Position element absolutely but keep it visible for rendering
+    element.style.display = "block";
+    element.style.position = "fixed";
+    element.style.zIndex = "-9999";
+    element.style.opacity = "1";
+    element.style.left = "-8000px";
+    element.style.width = "800px"; // Fixed width for PDF
+    element.style.height = "auto";
+    element.style.overflow = "visible";
+    element.style.visibility = "visible";
+    element.style.background = "white";
+    
+    // Use html2canvas with better settings
+    html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      windowWidth: 1200,
+      height: element.scrollHeight,
+      width: 800,
+      onclone: (clonedDoc) => {
+        // Manipulate the cloned document to better prepare it for PDF
+        const clonedElement = clonedDoc.getElementById(elementId);
+        if (clonedElement) {
+          // Make sure all content is visible
+          Array.from(clonedElement.querySelectorAll('*')).forEach(el => {
+            (el as HTMLElement).style.display = 'block';
+            if ((el as HTMLElement).style.height === '0px') {
+              (el as HTMLElement).style.height = 'auto';
+            }
+          });
+        }
+      }
+    }).then(canvas => {
+      try {
+        // Reset the element style
+        element.style.display = originalDisplay;
+        element.style.position = originalPosition;
+        element.style.zIndex = originalZIndex;
+        element.style.opacity = originalOpacity;
+        element.style.width = originalWidth;
+        element.style.height = originalHeight;
+        element.style.overflow = originalOverflow;
+        element.style.visibility = originalVisibility;
+        element.style.left = originalLeft;
+        
+        // Create a multi-page PDF if content is long
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        });
+        
+        // Calculate if multiple pages are needed
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgHeight = canvas.height * canvas.width / pdf.internal.pageSize.getWidth();
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        // Add first page
+        pdf.addImage(imgData, 'PNG', 0, position, pdf.internal.pageSize.getWidth(), 0);
+        heightLeft -= pageHeight;
+        
+        // Add additional pages if needed
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, pdf.internal.pageSize.getWidth(), 0);
+          heightLeft -= pageHeight;
+        }
+        
+        // Save the PDF
+        pdf.save(filename);
+        
+        // Clear the PDF content if requested (to free memory)
+        if (clearContentAfter) {
+          setPdfContentReady(false);
+        }
+        
+        toast.dismiss();
+        toast.success("Report downloaded successfully");
+      } catch (error) {
+        console.error("Error generating PDF:", error);
+        toast.dismiss();
+        toast.error("Error generating PDF");
+      }
+    }).catch(err => {
+      console.error("Error capturing content for PDF:", err);
+      toast.dismiss();
+      toast.error("Error capturing content for PDF");
+      
+      // Reset the element style on error
+      element.style.display = originalDisplay;
+      element.style.position = originalPosition;
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(filename);
+      
+      toast.dismiss();
+      toast.success("PDF downloaded successfully");
+    }).catch(err => {
+      console.error("Error generating PDF:", err);
+      toast.dismiss();
+      toast.error("Error generating PDF");
+      
+      // Reset the element style on error
+      element.style.display = originalDisplay;
+      element.style.position = originalPosition;
+      element.style.zIndex = originalZIndex;
+      element.style.opacity = originalOpacity;
+    });
+  };
+
+  const generatePatientReport = (patient: (typeof patients)[0]) => {
+    setSelectedPatientForReport(patient);
+    setPatientReportModalOpen(true);
+    setGeneratingPatientReport(true);
     
     // Simulate API call and AI processing time
     setTimeout(() => {
-      const recommendations = generateAIRecommendations();
-      const nextSteps = generateNextSteps();
+      // Generate mock data for the patient report
+      const vitalsTrend = [
+        { date: '2023-06-01', heartRate: 72, bloodPressure: '120/80', bloodGlucose: 98 },
+        { date: '2023-07-01', heartRate: 75, bloodPressure: '122/82', bloodGlucose: 102 },
+        { date: '2023-08-01', heartRate: 73, bloodPressure: '118/79', bloodGlucose: 95 },
+        { date: '2023-09-01', heartRate: 76, bloodPressure: '125/85', bloodGlucose: 108 },
+        { date: '2023-10-01', heartRate: 71, bloodPressure: '119/78', bloodGlucose: 97 },
+        { date: '2023-11-01', heartRate: 74, bloodPressure: '121/81', bloodGlucose: 104 },
+      ];
       
-      setReportData({
-        recommendations,
-        nextSteps,
-        timestamp: new Date().toISOString()
+      const medicationAdherence = patient.adherence === "excellent" ? 95 : 
+                                 patient.adherence === "good" ? 85 : 
+                                 patient.adherence === "moderate" ? 75 : 60;
+      
+      const communityInsights = [
+        `${patient.name} is from the ${patient.community} community, which has a ${
+          communityHealthData.find(c => c.community.includes(patient.community.split(' ')[0]))?.diabetesRate || 10
+        }% diabetes prevalence rate.`,
+        `Traditional medicine practices are commonly used in ${patient.community} for managing chronic conditions.`,
+        `${patient.community} has a strong cultural emphasis on community-based healing approaches.`,
+        `Language preferences: Traditional ${patient.community.split(' ')[0]} language may be preferred for discussing health concepts.`
+      ];
+      
+      const culturalConsiderations = [
+        "Include traditional knowledge keepers in treatment discussions when appropriate",
+        "Consider seasonal traditional activities when scheduling follow-ups",
+        "Respect communal decision-making processes for major treatment decisions",
+        "Incorporate traditional dietary considerations into nutritional guidance"
+      ];
+      
+      const treatmentRecommendations = patient.conditions.map(condition => {
+        let recommendation = "";
+        let evidence = "";
+        let confidence = 0;
+        
+        if (condition === "Diabetes Type 2") {
+          recommendation = "Consider integrated approach combining traditional dietary practices with standard medication. Recent studies show improved outcomes when traditional foods are incorporated into dietary plans for Indigenous patients with T2D.";
+          evidence = "Blood glucose trends indicate potential benefit from adjusted medication schedule and traditional medicine integration";
+          confidence = 87;
+        } else if (condition === "Hypertension") {
+          recommendation = "Current medication appears effective, but consider stress reduction techniques culturally appropriate for the patient's community background.";
+          evidence = "Recent blood pressure readings show improvement but with fluctuations coinciding with reported stress periods";
+          confidence = 92;
+        } else if (condition === "Heart Disease") {
+          recommendation = "Cardiac rehabilitation should be modified to account for traditional activities. Consider virtual monitoring options given patient's remote location.";
+          evidence = "Patient reported difficulty adhering to standard exercise regimen but engages regularly in traditional physical activities";
+          confidence = 85;
+        } else if (condition === "Arthritis") {
+          recommendation = "Traditional anti-inflammatory preparations have shown promising results when used alongside conventional treatments. Consider consulting with community elder for appropriate protocols.";
+          evidence = "Self-reported pain scores show improvement when traditional remedies are used as supplement";
+          confidence = 78;
+        } else if (condition === "Chronic Pain") {
+          recommendation = "Holistic pain management approach recommended, incorporating both pharmacological and traditional approaches. Virtual check-ins should be increased to weekly.";
+          evidence = "Pain diary indicates correlation between traditional medicine usage and reduced pain scores";
+          confidence = 81;
+        } else if (condition === "Asthma") {
+          recommendation = "Consider seasonal factors in treatment plan. Traditional respiratory treatments may complement conventional inhalers during high-risk seasons.";
+          evidence = "Symptom frequency shows seasonal patterns aligned with traditional ecological knowledge";
+          confidence = 89;
+        } else if (condition === "Pregnancy") {
+          recommendation = "Integrate traditional midwifery knowledge where appropriate. Schedule additional cultural support sessions during prenatal care.";
+          evidence = "Patient has expressed interest in traditional birthing practices alongside modern medical care";
+          confidence = 94;
+        } else if (condition === "Anemia") {
+          recommendation = "Traditional iron-rich food sources should be incorporated into nutritional guidance alongside supplements.";
+          evidence = "Previous response to combined traditional/conventional approach was positive";
+          confidence = 83;
+        } else if (condition === "Anxiety") {
+          recommendation = "Community-based healing circles have shown strong results for this patient. Continue supporting participation alongside conventional therapy.";
+          evidence = "Self-reported anxiety scores show marked improvement following community healing sessions";
+          confidence = 90;
+        } else {
+          recommendation = "Consider cultural context when developing treatment plans. Consult with traditional knowledge keepers from patient's community.";
+          evidence = "General best practice for culturally appropriate care";
+          confidence = 75;
+        }
+        
+        return {
+          condition,
+          recommendation,
+          evidence,
+          confidence
+        };
       });
       
-      setGeneratingReport(false);
-    }, 2500); // Simulating processing time
-  };
-
-  const handleDownloadReport = () => {
-    if (!reportData) return;
-    
-    // In a real app, this would generate a PDF or other formatted report
-    // For this example, we'll create a JSON file
-    
-    const reportBlob = new Blob(
-      [JSON.stringify({
-        title: "KweCare Healthcare Provider Analytics Report",
-        date: new Date().toLocaleDateString(),
-        provider: "Dr. Rebecca Taylor",
-        timeframe: analyticsTimeframe,
-        communityFilter: analyticsFilter,
-        patientMetrics: {
-          totalPatients: 128,
-          appointmentAdherence: "82%",
-          traditionalKnowledgeIntegration: "65%"
-        },
-        visitTypes: monthlyPatientVisits,
-        demographics: patientAgeDistribution,
-        conditions: conditionPrevalence,
-        communityEngagement,
-        treatmentOutcomes,
-        aiAnalysis: {
-          recommendations: reportData.recommendations,
-          suggestedNextSteps: reportData.nextSteps
-        }
-      }, null, 2)], 
-      { type: 'application/json' }
-    );
-    
-    // Create download link
-    const url = URL.createObjectURL(reportBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `kwecare-analytics-report-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success("Report downloaded successfully");
+      const aiNotes = `${patient.name}'s health data indicates ${
+        patient.status === "stable" ? "a stable condition with consistent management" :
+        patient.status === "improving" ? "improvement in key health indicators" :
+        patient.status === "monitoring" ? "a condition requiring careful monitoring" :
+        "deteriorating indicators requiring prompt intervention"
+      }. ${
+        patient.adherence === "excellent" ? "Medication adherence is excellent, suggesting strong engagement with treatment plan." :
+        patient.adherence === "good" ? "Medication adherence is good, though occasional lapses are noted." :
+        patient.adherence === "moderate" ? "Moderate medication adherence suggests barriers that should be addressed." :
+        "Poor medication adherence indicates significant barriers to treatment that require immediate attention."
+      }
+      
+      Cultural context analysis indicates that ${patient.name}'s connection to ${patient.community} traditions may offer unique opportunities for treatment integration. ${
+        patient.alerts > 0 ? `The ${patient.alerts} current alert(s) should be addressed as a priority.` : "No current alerts suggest this is an appropriate time for treatment plan review and adjustment."
+      }
+      
+      Comparing ${patient.name}'s health trajectory with similar demographic profiles suggests ${
+        patient.status === "improving" ? "continued improvement with current approach" :
+        patient.status === "stable" ? "maintenance of stability with potential for optimization" :
+        patient.status === "monitoring" ? "vigilant monitoring with potential need for adjustment" :
+        "intervention to address declining health indicators"
+      }. Consider scheduling follow-up within ${
+        patient.status === "deteriorating" ? "7" :
+        patient.status === "monitoring" ? "14" :
+        "30"
+      } days.`;
+      
+      setPatientReportData({
+        vitalsTrend,
+        medicationAdherence,
+        communityInsights,
+        culturalConsiderations,
+        treatmentRecommendations,
+        aiNotes
+      });
+      
+      setGeneratingPatientReport(false);
+    }, 3000);
   };
 
   return (
@@ -1698,7 +2018,7 @@ const ProviderDashboard = () => {
 
       {/* Report Generation Dialog */}
       <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto" id="analytics-report-content">
           <DialogHeader>
             <DialogTitle>Analytics Report with AI Recommendations</DialogTitle>
             <DialogDescription>
@@ -1798,6 +2118,284 @@ const ProviderDashboard = () => {
                   </Button>
                 </div>
               </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Patient Report Dialog */}
+      <Dialog open={patientReportModalOpen} onOpenChange={setPatientReportModalOpen}>
+        <DialogContent className="lg:max-w-[900px] max-h-[80vh] overflow-y-auto" id="patient-report-content">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-kwecare-primary" />
+              Comprehensive Patient Report
+            </DialogTitle>
+            <DialogDescription>
+              AI-assisted analysis and insights for {selectedPatientForReport?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {generatingPatientReport ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="relative h-16 w-16">
+                  <div className="absolute top-0 left-0 h-16 w-16 rounded-full border-4 border-t-blue-500 border-b-blue-700 border-l-blue-600 border-r-blue-600 animate-spin"></div>
+                  <FileText className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-blue-600" />
+                </div>
+                <p className="mt-4 text-center font-medium">
+                  Generating comprehensive patient report...
+                </p>
+                <p className="text-sm text-muted-foreground text-center mt-2">
+                  Analyzing health records, community context, and generating personalized insights
+                </p>
+              </div>
+            ) : (
+              <>
+                {selectedPatientForReport && patientReportData && (
+                  <div className="space-y-6">
+                    {/* Patient header */}
+                    <Card className="overflow-hidden border-l-4" style={{
+                      borderLeftColor: selectedPatientForReport.status === "stable" ? "#10b981" : 
+                                      selectedPatientForReport.status === "improving" ? "#3b82f6" : 
+                                      selectedPatientForReport.status === "monitoring" ? "#f59e0b" : 
+                                      "#ef4444"
+                    }}>
+                      <CardContent className="p-4">
+                        <div className="flex flex-col md:flex-row justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h2 className="text-xl font-bold">{selectedPatientForReport.name}</h2>
+                              {selectedPatientForReport.alerts > 0 && (
+                                <Badge variant="destructive">
+                                  {selectedPatientForReport.alerts} alert{selectedPatientForReport.alerts > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 mt-2">
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">Age:</span> {selectedPatientForReport.age}
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">Community:</span> {selectedPatientForReport.community}
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">Last Visit:</span> {selectedPatientForReport.lastVisit}
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">Next Visit:</span> {selectedPatientForReport.nextVisit}
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">Status:</span> {selectedPatientForReport.status}
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">Adherence:</span> {selectedPatientForReport.adherence}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2 mt-4 md:mt-0">
+                            <Button variant="outline" size="sm" onClick={() => handleDownloadAsPdf("patient-report-content", `patient-report-${selectedPatientForReport.name.replace(/\s+/g, '-').toLowerCase()}.pdf`)}>
+                              <FileDown className="h-4 w-4 mr-2" />
+                              Download Report
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Current conditions */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Current Conditions</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedPatientForReport.conditions.map((condition, i) => (
+                          <Card key={i}>
+                            <CardContent className="p-4">
+                              <h4 className="font-medium">{condition}</h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {condition === "Diabetes Type 2" ? "Managing with medication and lifestyle modifications" :
+                                 condition === "Hypertension" ? "Controlled with medication and dietary restrictions" :
+                                 condition === "Heart Disease" ? "Requires regular monitoring and medication adherence" :
+                                 condition === "Arthritis" ? "Managed with pain medication and physical therapy" :
+                                 condition === "Chronic Pain" ? "Pain management protocol in place" :
+                                 condition === "Asthma" ? "Managed with inhalers and environmental controls" :
+                                 condition === "Migraine" ? "Triggers identified and prevention plan in place" :
+                                 condition === "Anxiety" ? "Combination of medication and counseling" :
+                                 condition === "Pregnancy" ? "Regular prenatal care and monitoring" :
+                                 condition === "Anemia" ? "Iron supplementation and dietary management" :
+                                 "Under active treatment and monitoring"}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Medication adherence */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Medication Adherence</h3>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex flex-col md:flex-row items-center gap-6">
+                            <div className="relative h-28 w-28">
+                              <svg viewBox="0 0 100 100" className="h-full w-full">
+                                <circle
+                                  cx="50"
+                                  cy="50"
+                                  r="45"
+                                  fill="none"
+                                  stroke="#e2e8f0"
+                                  strokeWidth="10"
+                                />
+                                <circle
+                                  cx="50"
+                                  cy="50"
+                                  r="45"
+                                  fill="none"
+                                  stroke={
+                                    patientReportData.medicationAdherence >= 90 ? "#10b981" :
+                                    patientReportData.medicationAdherence >= 80 ? "#3b82f6" :
+                                    patientReportData.medicationAdherence >= 70 ? "#f59e0b" :
+                                    "#ef4444"
+                                  }
+                                  strokeWidth="10"
+                                  strokeDasharray={`${2 * Math.PI * 45 * patientReportData.medicationAdherence / 100} ${2 * Math.PI * 45 * (1 - patientReportData.medicationAdherence / 100)}`}
+                                  strokeDashoffset={2 * Math.PI * 45 * 0.25}
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-2xl font-bold">{patientReportData.medicationAdherence}%</span>
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-lg mb-2">Adherence Analysis</h4>
+                              <p className="text-sm mb-3">
+                                {patientReportData.medicationAdherence >= 90 
+                                  ? "Excellent medication adherence indicates strong engagement with treatment plan."
+                                  : patientReportData.medicationAdherence >= 80
+                                  ? "Good medication adherence, though occasional lapses are noted."
+                                  : patientReportData.medicationAdherence >= 70
+                                  ? "Moderate medication adherence suggests barriers that should be addressed."
+                                  : "Poor medication adherence indicates significant barriers to treatment that require immediate attention."}
+                              </p>
+                              <div className="text-sm text-muted-foreground">
+                                {patientReportData.medicationAdherence < 80 && (
+                                  <div className="mt-2 text-amber-800 bg-amber-50 p-2 rounded-md">
+                                    <strong>Suggested intervention:</strong> Schedule medication review appointment to address adherence barriers.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    {/* AI Treatment Recommendations */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        <Brain className="h-5 w-5 text-blue-600" />
+                        AI-Generated Treatment Recommendations
+                      </h3>
+                      <div className="space-y-4">
+                        {patientReportData.treatmentRecommendations.map((rec, i) => (
+                          <Card key={i} className="overflow-hidden border-l-4" style={{
+                            borderLeftColor: rec.confidence >= 90 ? "#10b981" : 
+                                            rec.confidence >= 80 ? "#3b82f6" : 
+                                            rec.confidence >= 70 ? "#f59e0b" : 
+                                            "#ef4444"
+                          }}>
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-medium">{rec.condition}</h4>
+                                <Badge variant="outline">
+                                  {rec.confidence}% confidence
+                                </Badge>
+                              </div>
+                              <p className="text-sm mb-3">{rec.recommendation}</p>
+                              <div className="text-xs bg-muted/40 p-2 rounded-md text-muted-foreground">
+                                <strong>Evidence:</strong> {rec.evidence}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Community and Cultural Context */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        <Globe className="h-5 w-5 text-green-600" />
+                        Community and Cultural Context
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-base">Community Insights</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <ul className="space-y-2 text-sm">
+                              {patientReportData.communityInsights.map((insight, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <ChevronRight className="h-4 w-4 text-kwecare-primary mt-0.5 flex-shrink-0" />
+                                  <span>{insight}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-base">Cultural Considerations</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <ul className="space-y-2 text-sm">
+                              {patientReportData.culturalConsiderations.map((consideration, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <ChevronRight className="h-4 w-4 text-kwecare-primary mt-0.5 flex-shrink-0" />
+                                  <span>{consideration}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                    
+                    {/* AI Summary Notes */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        <BookOpen className="h-5 w-5 text-indigo-600" />
+                        AI Clinical Summary
+                      </h3>
+                      <Card>
+                        <CardContent className="p-4">
+                          <p className="text-sm whitespace-pre-line">{patientReportData.aiNotes}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="bg-blue-50 p-4 rounded-md mb-4">
+                      <p className="text-sm text-blue-800">
+                        <strong>Note:</strong> This report is generated using AI analysis of health data and is intended to assist healthcare providers.
+                        All recommendations should be evaluated using clinical judgment and cultural context.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setPatientReportModalOpen(false)}>
+              Close
+            </Button>
+            {!generatingPatientReport && selectedPatientForReport && (
+              <Button onClick={() => handleDownloadAsPdf("patient-report-content", `patient-report-${selectedPatientForReport.name.replace(/\s+/g, '-').toLowerCase()}.pdf`)}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Download Report
+              </Button>
             )}
           </div>
         </DialogContent>
