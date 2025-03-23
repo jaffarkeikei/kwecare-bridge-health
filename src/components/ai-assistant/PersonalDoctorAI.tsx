@@ -51,6 +51,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const [isMounted, setIsMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const { userType } = useContext(AuthContext);
 
   // Simulate the AI persona
@@ -81,10 +82,49 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     }
   }, [isOpen]);
 
+  // Disable body scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      
+      // Disable scrolling on body
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Re-enable scrolling when component unmounts
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
   // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Handle escape key press to close modal
+  useEffect(() => {
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (isOpen && e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -184,8 +224,13 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-8">
-      <div className="bg-card w-full max-w-3xl rounded-xl shadow-lg border border-border flex flex-col h-[80vh] overflow-hidden transition-all duration-300 ease-in-out transform">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-8" onClick={onClose}>
+      <div 
+        ref={modalRef}
+        className="bg-card w-full max-w-3xl rounded-xl shadow-lg border border-border flex flex-col h-[80vh] overflow-hidden transition-all duration-300 ease-in-out transform animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-5"
+        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30 shrink-0">
           <div className="flex items-center gap-3">
@@ -206,7 +251,13 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
               <p className="text-xs text-muted-foreground">Your Personal AI Health Assistant</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="text-muted-foreground">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose} 
+            className="text-muted-foreground hover:bg-red-100 hover:text-red-500 transition-colors"
+            aria-label="Close"
+          >
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -234,7 +285,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
         </div>
         
         {/* Chat Messages */}
-        <ScrollArea className="flex-1 overflow-y-auto h-0 px-4">
+        <ScrollArea className="flex-1 overflow-y-auto h-0 px-4 no-scrollbar">
           <div className="py-4 space-y-4">
             {messages.map((message) => (
               <div 
@@ -323,12 +374,23 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
               placeholder="Ask your health question..."
               className="flex-grow"
               disabled={isGenerating}
+              onKeyDown={(e) => {
+                // Trap focus within modal
+                if (e.key === 'Tab' && !e.shiftKey) {
+                  const closeButton = modalRef.current?.querySelector('button[aria-label="Close"]');
+                  if (closeButton && document.activeElement === e.currentTarget) {
+                    e.preventDefault();
+                    (closeButton as HTMLElement).focus();
+                  }
+                }
+              }}
             />
             <Button 
               type="submit" 
               size="icon" 
               disabled={!inputMessage.trim() || isGenerating}
               className="bg-primary hover:bg-primary/90"
+              aria-label="Send message"
             >
               {isGenerating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
