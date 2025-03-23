@@ -17,7 +17,8 @@ import {
   MessageSquare, 
   Star,
   Leaf,
-  TestTube as Flask
+  TestTube as Flask,
+  Eye
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { prepareDataMigration, executeDataMigration } from "@/utils/healthDataMigration";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface PatientVitals {
   bloodPressure: string;
@@ -127,7 +138,6 @@ export interface PatientRecord {
   notes: PatientNote[];
 }
 
-// Mock patient data
 const mockPatientData: PatientRecord = {
   id: "P123456",
   name: "David Wilson",
@@ -333,8 +343,9 @@ interface PatientRecordViewerProps {
 const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [isTransferring, setIsTransferring] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [showReportPreview, setShowReportPreview] = useState(false);
   
-  // In a real app, you would fetch patient data based on the ID
   const patient = mockPatientData;
 
   const getStatusColor = (status: string) => {
@@ -355,11 +366,69 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
     }
   };
 
+  const generatePDF = async (download = true) => {
+    try {
+      if (download) {
+        setIsGeneratingReport(true);
+      }
+      
+      const reportElement = document.getElementById('patient-report');
+      if (!reportElement) {
+        toast.error("Could not find report element");
+        return;
+      }
+      
+      const canvas = await html2canvas(reportElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      if (download) {
+        pdf.save(`${patient.name.replace(/\s/g, '_')}_medical_record.pdf`);
+        toast.success("Report downloaded successfully");
+      }
+      
+      return pdf;
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate report");
+      return null;
+    } finally {
+      if (download) {
+        setIsGeneratingReport(false);
+      }
+    }
+  };
+
+  const handlePreviewReport = async () => {
+    setShowReportPreview(true);
+  };
+
+  const handleGenerateReport = async () => {
+    await generatePDF(true);
+  };
+
+  const handleDownloadReport = async () => {
+    await generatePDF(true);
+  };
+
   const handleDataTransfer = async () => {
     setIsTransferring(true);
     
     try {
-      // Simulating data transfer using the health data migration utility
       const records = [
         {
           id: "rec-123",
@@ -392,12 +461,11 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
         respectTraditionalProtections: true
       });
       
-      // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const transferResult = await executeDataMigration(
         migrationResult.migrationPackage,
-        true // Simulate patient consent
+        true
       );
       
       if (transferResult) {
@@ -415,7 +483,6 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
 
   return (
     <div className="space-y-6">
-      {/* Patient Header */}
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row justify-between">
@@ -444,17 +511,39 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
             </div>
             
             <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9">
-                      <Printer className="h-4 w-4 mr-2" />
-                      Print
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Print patient record</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <Printer className="h-4 w-4 mr-2" />
+                    Report
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>Report Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handlePreviewReport}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview Report
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleGenerateReport} disabled={isGeneratingReport}>
+                    {isGeneratingReport ? (
+                      <>
+                        <Clock8 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Generate Report
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownloadReport} disabled={isGeneratingReport}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Report
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -479,7 +568,7 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
                       </>
                     )}
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownloadReport}>
                     <Download className="h-4 w-4 mr-2" />
                     Export Medical Record
                   </DropdownMenuItem>
@@ -500,7 +589,307 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
         </CardContent>
       </Card>
 
-      {/* Content Tabs */}
+      <Dialog open={showReportPreview} onOpenChange={setShowReportPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Patient Report Preview</DialogTitle>
+            <DialogDescription>
+              Review the patient report before downloading
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <div id="report-preview">
+              <div className="space-y-6">
+                <div className="border-b pb-4">
+                  <h2 className="text-2xl font-bold">{patient.name}</h2>
+                  <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted-foreground">
+                    <div>{patient.age} years ({patient.dateOfBirth})</div>
+                    <div>•</div>
+                    <div>{patient.gender}</div>
+                    <div>•</div>
+                    <div>ID: {patient.id}</div>
+                    <div>•</div>
+                    <div>{patient.community}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Contact Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Phone</div>
+                      <div>{patient.contact.phone}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Email</div>
+                      <div>{patient.contact.email}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Address</div>
+                      <div>{patient.contact.address}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Active Diagnoses</h3>
+                  <div className="space-y-2">
+                    {patient.diagnoses
+                      .filter(d => d.status === "active")
+                      .map((diagnosis, i) => (
+                        <div key={i} className="border p-3 rounded-lg">
+                          <h4 className="font-medium">{diagnosis.condition}</h4>
+                          <div className="text-sm mt-1">
+                            <span className="text-muted-foreground">Diagnosed: </span>
+                            {diagnosis.diagnosedDate} by {diagnosis.diagnosedBy}
+                          </div>
+                          {diagnosis.treatmentPlan && (
+                            <div className="text-sm mt-2">
+                              <span className="text-muted-foreground">Treatment: </span>
+                              {diagnosis.treatmentPlan}
+                            </div>
+                          )}
+                        </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Current Medications</h3>
+                  <div className="space-y-2">
+                    {patient.medications.map((med, i) => (
+                      <div key={i} className="border p-3 rounded-lg">
+                        <h4 className="font-medium">{med.name}</h4>
+                        <div className="text-sm">
+                          {med.dosage}, {med.frequency}
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Purpose: </span>
+                          {med.purpose}
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Prescribed by: </span>
+                          {med.prescribedBy}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Recent Lab Results</h3>
+                  <div className="space-y-2">
+                    {patient.labResults.map((lab, i) => (
+                      <div key={i} className="border p-3 rounded-lg">
+                        <h4 className="font-medium">{lab.testName}</h4>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Date: </span>
+                          {lab.date}
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Result: </span>
+                          {lab.result}
+                        </div>
+                        {lab.normalRange && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Normal Range: </span>
+                            {lab.normalRange}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Recent Vitals</h3>
+                  <div className="space-y-2">
+                    {patient.vitals.slice(0, 1).map((vital, i) => (
+                      <div key={i} className="border p-3 rounded-lg">
+                        <div className="text-sm text-muted-foreground">
+                          Recorded on: {new Date(vital.timestamp).toLocaleDateString()}
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                          <div>
+                            <div className="text-sm text-muted-foreground">Blood Pressure</div>
+                            <div>{vital.bloodPressure}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-muted-foreground">Heart Rate</div>
+                            <div>{vital.heartRate} bpm</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-muted-foreground">Blood Glucose</div>
+                            <div>{vital.bloodGlucose} mmol/L</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-muted-foreground">O₂ Saturation</div>
+                            <div>{vital.oxygenSaturation}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="text-xs text-muted-foreground border-t pt-4">
+                  Generated on {new Date().toLocaleString()} by KweCare Health
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowReportPreview(false)}>
+              Close
+            </Button>
+            <Button onClick={handleDownloadReport}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div id="patient-report" className="hidden">
+        <div className="p-6 bg-white space-y-6">
+          <div className="border-b pb-4">
+            <h2 className="text-2xl font-bold">{patient.name}</h2>
+            <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted-foreground">
+              <div>{patient.age} years ({patient.dateOfBirth})</div>
+              <div>•</div>
+              <div>{patient.gender}</div>
+              <div>•</div>
+              <div>ID: {patient.id}</div>
+              <div>•</div>
+              <div>{patient.community}</div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Contact Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm text-muted-foreground">Phone</div>
+                <div>{patient.contact.phone}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Email</div>
+                <div>{patient.contact.email}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Address</div>
+                <div>{patient.contact.address}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Active Diagnoses</h3>
+            <div className="space-y-2">
+              {patient.diagnoses
+                .filter(d => d.status === "active")
+                .map((diagnosis, i) => (
+                  <div key={i} className="border p-3 rounded-lg">
+                    <h4 className="font-medium">{diagnosis.condition}</h4>
+                    <div className="text-sm mt-1">
+                      <span className="text-muted-foreground">Diagnosed: </span>
+                      {diagnosis.diagnosedDate} by {diagnosis.diagnosedBy}
+                    </div>
+                    {diagnosis.treatmentPlan && (
+                      <div className="text-sm mt-2">
+                        <span className="text-muted-foreground">Treatment: </span>
+                        {diagnosis.treatmentPlan}
+                      </div>
+                    )}
+                  </div>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Current Medications</h3>
+            <div className="space-y-2">
+              {patient.medications.map((med, i) => (
+                <div key={i} className="border p-3 rounded-lg">
+                  <h4 className="font-medium">{med.name}</h4>
+                  <div className="text-sm">
+                    {med.dosage}, {med.frequency}
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Purpose: </span>
+                    {med.purpose}
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Prescribed by: </span>
+                    {med.prescribedBy}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Recent Lab Results</h3>
+            <div className="space-y-2">
+              {patient.labResults.map((lab, i) => (
+                <div key={i} className="border p-3 rounded-lg">
+                  <h4 className="font-medium">{lab.testName}</h4>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Date: </span>
+                    {lab.date}
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Result: </span>
+                    {lab.result}
+                  </div>
+                  {lab.normalRange && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Normal Range: </span>
+                      {lab.normalRange}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Recent Vitals</h3>
+            <div className="space-y-2">
+              {patient.vitals.slice(0, 1).map((vital, i) => (
+                <div key={i} className="border p-3 rounded-lg">
+                  <div className="text-sm text-muted-foreground">
+                    Recorded on: {new Date(vital.timestamp).toLocaleDateString()}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Blood Pressure</div>
+                      <div>{vital.bloodPressure}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Heart Rate</div>
+                      <div>{vital.heartRate} bpm</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Blood Glucose</div>
+                      <div>{vital.bloodGlucose} mmol/L</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">O₂ Saturation</div>
+                      <div>{vital.oxygenSaturation}%</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="text-xs text-muted-foreground border-t pt-4">
+            Generated on {new Date().toLocaleString()} by KweCare Health
+          </div>
+        </div>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-6">
           <TabsTrigger value="overview" className="gap-2">
@@ -529,7 +918,6 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
           </TabsTrigger>
         </TabsList>
         
-        {/* Overview Tab */}
         <TabsContent value="overview">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
@@ -796,7 +1184,6 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
           </div>
         </TabsContent>
         
-        {/* Vitals Tab */}
         <TabsContent value="vitals">
           <Card>
             <CardHeader>
@@ -844,7 +1231,6 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
           </Card>
         </TabsContent>
         
-        {/* Medications Tab */}
         <TabsContent value="medications">
           <Card>
             <CardHeader>
@@ -903,7 +1289,6 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
           </Card>
         </TabsContent>
         
-        {/* Lab Results Tab */}
         <TabsContent value="labs">
           <Card>
             <CardHeader>
@@ -959,7 +1344,6 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
           </Card>
         </TabsContent>
         
-        {/* Diagnoses Tab */}
         <TabsContent value="diagnoses">
           <Card>
             <CardHeader>
@@ -1015,7 +1399,6 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
           </Card>
         </TabsContent>
         
-        {/* Notes Tab */}
         <TabsContent value="notes">
           <Card>
             <CardHeader>
@@ -1076,4 +1459,4 @@ const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({ patientId }) 
   );
 };
 
-export default PatientRecordViewer; 
+export default PatientRecordViewer;
