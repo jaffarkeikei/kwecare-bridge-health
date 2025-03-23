@@ -1,69 +1,128 @@
-# Welcome to your Lovable project
+# KweCare: Healing Without Borders
 
-## Project info
+![KweCare Logo](assets/logo.png)
 
-**URL**: https://lovable.dev/projects/172b499b-efed-4f28-ac8b-27c4fd0e6383
+## 🌟 Overview
 
-## How can I edit this code?
+KweCare is a revolutionary Flutter-powered mobile application designed to bridge healthcare gaps for remote Indigenous communities in Canada. By combining offline AI diagnostics, satellite telemedicine, and culturally sensitive design, KweCare ensures equitable access to specialized healthcare for populations facing geographic, technological, and cultural barriers.
 
-There are several ways of editing your application.
+## 🏥 The Problem
 
-**Use Lovable**
+Remote Indigenous communities in Canada face significant healthcare challenges:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/172b499b-efed-4f28-ac8b-27c4fd0e6383) and start prompting.
+- **3x higher rates** of diabetes and chronic diseases
+- **Limited access** to specialists (endocrinologists, cardiologists, etc.)
+- **Cultural disconnect** in healthcare delivery
+- **Unreliable internet connectivity**, making traditional telemedicine ineffective
 
-Changes made via Lovable will be committed automatically to this repo.
+## 💡 Our Solution
 
-**Use your preferred IDE**
+KweCare addresses these challenges through four integrated components:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Offline AI Diagnostics
+- **AI-Powered Symptom Checker**: Pre-loaded TensorFlow Lite models analyze symptoms, vital signs, and images without internet
+- **Predictive Alerts**: AI identifies risks for diabetes, hypertension, and infections, providing guidance in Indigenous languages
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 2. Satellite Telemedicine
+- **Low-Bandwidth Video Consultations**: Integration with Starlink API for secure, high-quality calls with urban specialists
+- **Data Syncing**: Records save locally and upload automatically when connectivity resumes
 
-Follow these steps:
+### 3. Cultural Safety Features
+- **Indigenous Language Support**: Voice commands and text in Cree, Inuktitut, and Ojibwe
+- **Traditional Knowledge Integration**: Educational modules co-designed with Elders
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 4. Community Empowerment
+- **Local Health Worker Portal**: Tools for Community Health Workers to triage patients, track health trends, and coordinate care
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🚀 Getting Started
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Prerequisites
+- Flutter SDK (2.10.0 or higher)
+- Dart SDK (2.16.0 or higher)
+- Android Studio / VS Code
+- iOS deployment: macOS with Xcode
+- Android deployment: Android SDK
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/jaffarkeikei/KweCare.git
+
+# Navigate to project directory
+cd KweCare
+
+# Install dependencies
+flutter pub get
+
+# Run the app
+flutter run
 ```
 
-**Edit a file directly in GitHub**
+## 🧰 Tech Stack
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Category | Technologies |
+|----------|--------------|
+| **Offline AI** | `tflite_flutter`, `mlkit` |
+| **Telemedicine** | `agora_rtc_engine`, `web_socket_channel` |
+| **Localization** | `flutter_localizations`, `intl` |
+| **Data Syncing** | `hive`, `firebase_core` |
+| **UI Components** | `flutter_svg`, `cached_network_image` |
+| **Accessibility** | `flutter_accessibility` |
 
-**Use GitHub Codespaces**
+## 📊 Impact Metrics
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **Short-Term**: Reduce medical travel costs by $1,500+/patient
+- **Long-Term**: Lower diabetes-related complications by 30% in pilot communities
+- **Scalability**: Expandable to mental health, maternal care, and disaster response
 
-## What technologies are used for this project?
+## 👥 Team
 
-This project is built with .
+- **Lead Developer**: AI/ML integration and offline functionality
+- **UX Designer**: Culturally responsive interface and accessibility
+- **Satellite Engineer**: Starlink API implementation
+- **Community Liaison**: Partnerships with Indigenous health advisors
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📚 Documentation
 
-## How can I deploy this project?
+Explore our detailed documentation for more information:
 
-Simply open [Lovable](https://lovable.dev/projects/172b499b-efed-4f28-ac8b-27c4fd0e6383) and click on Share -> Publish.
+- [Architecture Overview](docs/architecture.md)
+- [Data Flow & Security](docs/data-flow.md)
+- [AI Models & Capabilities](docs/ai-models.md)
+- [Localization Guide](docs/localization.md)
+- [Cultural Integration](docs/cultural-integration.md)
+- [Developer Guide](docs/developer-guide.md)
 
-## I want to use a custom domain - is that possible?
+## 🔗 Resources
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- [Project Wiki](docs/wiki/home.md)
+- [API Documentation](docs/api/overview.md)
+- [Research Papers](docs/research/indigenous-healthcare-barriers.md)
+
+## 📱 Screenshots
+
+<div align="center">
+  <img src="docs/images/symptom-checker-cree.png" alt="Symptom Checker in Cree" width="200"/>
+  <img src="docs/images/telemedicine-interface.png" alt="Telemedicine Interface" width="200"/>
+  <img src="docs/images/health-dashboard.png" alt="Community Health Dashboard" width="200"/>
+</div>
+
+## 🔄 Why Flutter?
+
+- **Cross-Platform**: Deploy on iOS/Android with a single codebase
+- **UI Flexibility**: Create culturally responsive designs (Indigenous iconography)
+- **Offline-First**: Easy integration with local databases
+- **Community Packages**: Leverage existing plugins for AI, telemedicine, and localization
+
+## 🌿 Vision
+
+KweCare redefines healthcare accessibility by centering Indigenous sovereignty, resilience, and innovation. Together, we're breaking borders—geographic, cultural, and technological.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgements
+
+We extend our deepest gratitude to the Indigenous communities, Elders, and knowledge keepers who have guided this project with their wisdom and expertise. 
