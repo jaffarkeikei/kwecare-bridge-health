@@ -24,7 +24,9 @@ export const AuthContext = createContext({
   isAuthenticated: false,
   setIsAuthenticated: (value: boolean) => {},
   userType: "",
-  setUserType: (value: string) => {}
+  setUserType: (value: string) => {},
+  selectedPatientId: null as string | null,
+  setSelectedPatientId: (value: string | null) => {}
 });
 
 const queryClient = new QueryClient();
@@ -33,6 +35,7 @@ const App = () => {
   // In a real app, this would check localStorage, cookies, or an API
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userType, setUserType] = useState("");
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   
   // Check if user is logged in when app loads
   useEffect(() => {
@@ -50,7 +53,14 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, userType, setUserType }}>
+      <AuthContext.Provider value={{ 
+        isAuthenticated, 
+        setIsAuthenticated, 
+        userType, 
+        setUserType,
+        selectedPatientId,
+        setSelectedPatientId
+      }}>
         <BrowserRouter>
           <TooltipProvider>
             <Toaster />

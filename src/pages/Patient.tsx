@@ -1,13 +1,27 @@
-import React from "react";
+import React, { useContext, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import Header from "@/components/ui/layout/Header";
 import Footer from "@/components/ui/layout/Footer";
 import PatientRecordViewer from "@/components/provider/PatientRecordViewer";
+import { AuthContext } from "@/App";
 
 const Patient = () => {
   // Get the patient ID from URL params
   const { patientId } = useParams<{ patientId: string }>();
+  const { setSelectedPatientId } = useContext(AuthContext);
+
+  // Update the selected patient ID when the component mounts
+  useEffect(() => {
+    if (patientId) {
+      setSelectedPatientId(patientId);
+    }
+    
+    // Clear the selected patient ID when the component unmounts
+    return () => {
+      setSelectedPatientId(null);
+    };
+  }, [patientId, setSelectedPatientId]);
 
   return (
     <>
