@@ -2322,7 +2322,19 @@ const ProviderDashboard = () => {
       const endAngle = startAngle + (2 * Math.PI * medicationAdherence / 100);
       
       // Manually draw arc since jsPDF doesn't have a direct arc method for circles
-      pdf.ellipse(centerX, centerY, radius, radius, 0);
+      // Using arc method instead of ellipse to fix type error
+      const steps = 100;
+      for (let i = 0; i < steps; i++) {
+        const angle1 = startAngle + (i / steps) * (endAngle - startAngle);
+        const angle2 = startAngle + ((i + 1) / steps) * (endAngle - startAngle);
+        
+        const x1 = centerX + radius * Math.cos(angle1);
+        const y1 = centerY + radius * Math.sin(angle1);
+        const x2 = centerX + radius * Math.cos(angle2);
+        const y2 = centerY + radius * Math.sin(angle2);
+        
+        pdf.line(x1, y1, x2, y2);
+      }
       
       // Add percentage in center
       pdf.setFont('helvetica', 'bold');
