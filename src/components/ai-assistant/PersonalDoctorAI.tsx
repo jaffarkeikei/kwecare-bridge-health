@@ -173,6 +173,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
   const [currentSpeakingMessageId, setCurrentSpeakingMessageId] = useState<string | null>(null);
+  const [voicePersona, setVoicePersona] = useState<string>("female"); // Options: female, male, neutral
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -199,9 +200,24 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       console.warn('No Google Speech API key file path found in environment variables');
     }
     
-    // For browser speech synthesis (text-to-speech), keep this part
+    // For browser speech synthesis (text-to-speech)
     if ('speechSynthesis' in window) {
       synthRef.current = window.speechSynthesis;
+      
+      // Load voices - Chrome needs this event to get all voices
+      const loadVoices = () => {
+        // Store voices in a ref to access them later
+        const voices = synthRef.current?.getVoices() || [];
+        console.log(`Loaded ${voices.length} speech synthesis voices`);
+      };
+      
+      // Chrome loads voices asynchronously
+      if (synthRef.current.onvoiceschanged !== undefined) {
+        synthRef.current.onvoiceschanged = loadVoices;
+      }
+      
+      // Load voices immediately (works in Safari/Firefox)
+      loadVoices();
     }
     
     return () => {
@@ -529,10 +545,70 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     const utterance = new SpeechSynthesisUtterance(text);
     utteranceRef.current = utterance;
     
-    // Set speaking properties
-    utterance.rate = 1.0; // Speed of speech (0.1 to 10)
-    utterance.pitch = 1.0; // Pitch of speech (0 to 2)
-    utterance.volume = 1.0; // Volume (0 to 1)
+    // Get available voices and select the best one
+    let voices = synthRef.current.getVoices();
+    
+    // For debugging
+    if (voices.length === 0) {
+      console.warn("No voices available yet - using default system voice");
+    } else {
+      console.log(`Found ${voices.length} voices`);
+    }
+    
+    // Try to find a voice based on the selected persona
+    let selectedVoice = null;
+    
+    if (voicePersona === "female") {
+      // Female voice preference
+      selectedVoice = voices.find(voice => 
+        (voice.name.toLowerCase().includes('samantha') || 
+         voice.name.toLowerCase().includes('female') ||
+         voice.name.toLowerCase().includes('lisa') ||
+         voice.name.toLowerCase().includes('karen') ||
+         voice.name.toLowerCase().includes('tessa')) &&
+        voice.lang.startsWith('en')
+      );
+    } else if (voicePersona === "male") {
+      // Male voice preference
+      selectedVoice = voices.find(voice => 
+        (voice.name.toLowerCase().includes('daniel') || 
+         voice.name.toLowerCase().includes('male') ||
+         voice.name.toLowerCase().includes('alex') ||
+         voice.name.toLowerCase().includes('tom')) && 
+        voice.lang.startsWith('en')
+      );
+    } else {
+      // Neutral or any good voice
+      selectedVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('premium') || 
+        voice.name.toLowerCase().includes('enhanced')
+      );
+    }
+    
+    // If still no voice found, use any English voice
+    if (!selectedVoice) {
+      selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
+    }
+    
+    // If we found a good voice, use it
+    if (selectedVoice) {
+      console.log("Selected voice:", selectedVoice.name);
+      utterance.voice = selectedVoice;
+    }
+    
+    // Adjust speech parameters based on persona
+    if (voicePersona === "female") {
+      utterance.rate = 0.92; // Slightly slower for clarity
+      utterance.pitch = 1.05; // Slightly higher pitch
+    } else if (voicePersona === "male") {
+      utterance.rate = 0.90; // Slower rate for male voices
+      utterance.pitch = 0.95; // Lower pitch
+    } else {
+      utterance.rate = 0.95; // Neutral rate
+      utterance.pitch = 1.0;  // Neutral pitch
+    }
+    
+    utterance.volume = 1.0; // Full volume for all
     
     // Handle events
     utterance.onstart = () => {
@@ -793,23 +869,58 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                 <VolumeX className="h-4 w-4" />
               </Button>
             ) : (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
-                  if (lastAssistantMessage) {
-                    const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
-                    speakText(plainTextResponse, lastAssistantMessage.id);
-                  }
-                }}
-                className="text-primary border-primary/30 h-8 w-8"
-                aria-label="Read last response"
-                title="Read last response"
-                disabled={!messages.some(msg => msg.role === 'assistant')}
-              >
-                <Volume2 className="h-4 w-4" />
-              </Button>
+              <>
+                <div className="relative group">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
+                      if (lastAssistantMessage) {
+                        const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
+                        speakText(plainTextResponse, lastAssistantMessage.id);
+                      }
+                    }}
+                    className="text-primary border-primary/30 h-8 w-8"
+                    aria-label="Read last response"
+                    title="Read with current voice"
+                    disabled={!messages.some(msg => msg.role === 'assistant')}
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                  
+                  {/* Voice selector dropdown that appears on hover */}
+                  <div className="absolute right-0 mt-1 w-36 bg-card rounded-md shadow-lg border border-border hidden group-hover:block z-50">
+                    <div className="p-1 text-xs font-medium text-muted-foreground">Voice Type</div>
+                    <div className="px-1 pb-1">
+                      <Button
+                        variant={voicePersona === "female" ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start text-xs"
+                        onClick={() => setVoicePersona("female")}
+                      >
+                        Female
+                      </Button>
+                      <Button
+                        variant={voicePersona === "male" ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start text-xs"
+                        onClick={() => setVoicePersona("male")}
+                      >
+                        Male
+                      </Button>
+                      <Button
+                        variant={voicePersona === "neutral" ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start text-xs"
+                        onClick={() => setVoicePersona("neutral")}
+                      >
+                        Neutral
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
             <Button 
               variant="ghost" 
