@@ -183,7 +183,11 @@ class GoogleSpeechService {
         return;
       }
       
-      const audioUrl = `${this.backendUrl}${data.audioUrl}`;
+      // Ensure we have the correct URL format by properly joining paths
+      // If the audioUrl starts with a slash, we need to remove it to avoid double slashes
+      const audioPath = data.audioUrl.startsWith('/') ? data.audioUrl.substring(1) : data.audioUrl;
+      const audioUrl = `${this.backendUrl}/${audioPath}`;
+      
       console.log("Received audio URL:", audioUrl);
       
       // Create and play the audio

@@ -189,10 +189,11 @@ app.post('/api/tts', async (req, res) => {
       fs.mkdirSync(path.join(__dirname, 'public'), { recursive: true });
     }
     
-    // If API is already known to be disabled, use fallback immediately
+    // Check if API is already known to be disabled, use fallback immediately
     if (!apiEnabled) {
       await synthesizeSpeechFallback(cleanedText, outputFile);
       const audioUrl = `/api/audio/${fileName}`;
+      console.log(`Sending fallback audio URL: ${audioUrl}`);
       return res.json({ 
         audioUrl,
         fallback: true,
@@ -222,7 +223,7 @@ app.post('/api/tts', async (req, res) => {
       
       // Return the URL to the audio file
       const audioUrl = `/api/audio/${fileName}`;
-      console.log(`Generated audio file: ${audioUrl}`);
+      console.log(`Generated audio file at path: ${audioUrl}`);
       
       res.json({ audioUrl });
     } catch (apiError) {
@@ -236,6 +237,7 @@ app.post('/api/tts', async (req, res) => {
         // Use fallback synthesis
         await synthesizeSpeechFallback(cleanedText, outputFile);
         const audioUrl = `/api/audio/${fileName}`;
+        console.log(`Sending fallback audio URL: ${audioUrl}`);
         return res.json({ 
           audioUrl, 
           fallback: true,
@@ -260,10 +262,26 @@ app.get('/api/audio/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, 'public', filename);
   
+  console.log(`Request for audio file: ${filename}`);
+  console.log(`Looking for file at: ${filePath}`);
+  
   if (fs.existsSync(filePath)) {
+    console.log(`File exists, serving: ${filePath}`);
     res.setHeader('Content-Type', 'audio/mpeg');
     res.sendFile(filePath);
   } else {
+    console.error(`Audio file not found: ${filePath}`);
+    
+    // Check if the public directory exists
+    const publicDir = path.join(__dirname, 'public');
+    if (!fs.existsSync(publicDir)) {
+      console.error(`Public directory does not exist: ${publicDir}`);
+    } else {
+      // List available files in public directory
+      const files = fs.readdirSync(publicDir);
+      console.log(`Files in public directory: ${files.join(', ') || 'None'}`);
+    }
+    
     res.status(404).send('Audio file not found');
   }
 });
