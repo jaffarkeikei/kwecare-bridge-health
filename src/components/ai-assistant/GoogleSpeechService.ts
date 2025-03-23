@@ -59,8 +59,8 @@ class GoogleSpeechService {
     return this.isInitialized;
   }
 
-  async transcribeAudio(audioBuffer: ArrayBuffer): Promise<string> {
-    console.log('transcribeAudio called with buffer size:', audioBuffer.byteLength);
+  async transcribeAudio(audioBuffer: ArrayBuffer, language: string = 'en'): Promise<string> {
+    console.log(`transcribeAudio called with buffer size: ${audioBuffer.byteLength}, language: ${language}`);
     
     // In a real implementation, this would call the Google Cloud Speech-to-Text API
     // through a backend proxy for security reasons
@@ -78,16 +78,36 @@ class GoogleSpeechService {
       // Always return a useful response since we have real audio data
       // In a real implementation, this would be the actual transcription from Google Cloud
       
-      const mockResponses = [
-        "I've been having headaches for the past week.",
-        "What foods should I avoid with my diabetes?",
-        "How often should I check my blood pressure?",
-        "I'm feeling dizzy when I stand up too quickly.",
-        "Should I be worried about my blood sugar readings?",
-      ];
+      // Different responses based on language
+      const mockResponses: Record<string, string[]> = {
+        en: [
+          "I've been having headaches for the past week.",
+          "What foods should I avoid with my diabetes?",
+          "How often should I check my blood pressure?",
+          "I'm feeling dizzy when I stand up too quickly.",
+          "Should I be worried about my blood sugar readings?",
+        ],
+        es: [
+          "He tenido dolores de cabeza durante la última semana.",
+          "¿Qué alimentos debo evitar con mi diabetes?",
+          "¿Con qué frecuencia debo controlar mi presión arterial?",
+          "Me siento mareado cuando me levanto demasiado rápido.",
+          "¿Debería preocuparme por mis lecturas de azúcar en sangre?",
+        ],
+        fr: [
+          "J'ai des maux de tête depuis une semaine.",
+          "Quels aliments dois-je éviter avec mon diabète?",
+          "À quelle fréquence dois-je vérifier ma tension artérielle?",
+          "Je me sens étourdi quand je me lève trop vite.",
+          "Devrais-je m'inquiéter de mes relevés de glycémie?",
+        ]
+      };
+      
+      // Get responses for the requested language or fall back to English
+      const responses = mockResponses[language.slice(0, 2)] || mockResponses.en;
       
       // Return a random mock response
-      const response = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+      const response = responses[Math.floor(Math.random() * responses.length)];
       console.log('Returning mock transcription:', response);
       return response;
     } catch (error) {

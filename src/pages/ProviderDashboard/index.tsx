@@ -23,14 +23,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Header from "@/components/ui/layout/Header";
 import Footer from "@/components/ui/layout/Footer";
+import { ProviderAssistantButton } from "@/components/ai-assistant";
 
 // Import tab components
 import DashboardOverview from "./components/DashboardOverview";
-// import PatientManagement from "./components/PatientManagement";
-// import AppointmentSection from "./components/AppointmentSection";
-// import RecordsManagement from "./components/RecordsManagement";
-// import AnalyticsSection from "./components/AnalyticsSection";
-// import MessagesSection from "./components/MessagesSection";
+import PatientManagement from "./components/PatientManagement";
+import AppointmentSection from "./components/AppointmentSection";
+import RecordsManagement from "./components/RecordsManagement";
+import AnalyticsSection from "./components/AnalyticsSection";
+import MessagesSection from "./components/MessagesSection";
 
 // Types
 export type ProviderTab = "dashboard" | "patients" | "appointments" | "records" | "analytics" | "messages";
@@ -55,6 +56,7 @@ const ProviderDashboard = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              <ProviderAssistantButton className="mr-2" />
               <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 px-3 py-1 text-sm">
                 Provider Mode
               </Badge>
@@ -136,11 +138,11 @@ const ProviderDashboard = () => {
 
           {/* Render active tab content */}
           {activeTab === "dashboard" && <DashboardOverview />}
-          {/* {activeTab === "patients" && <PatientManagement />}
+          {activeTab === "patients" && <PatientManagement />}
           {activeTab === "appointments" && <AppointmentSection />}
           {activeTab === "records" && <RecordsManagement />}
           {activeTab === "analytics" && <AnalyticsSection />}
-          {activeTab === "messages" && <MessagesSection />} */}
+          {activeTab === "messages" && <MessagesSection />}
         </main>
 
         <Footer />

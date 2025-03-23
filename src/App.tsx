@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
-import ProviderDashboard from "./pages/ProviderDashboard";
+import ProviderDashboard from "./pages/ProviderDashboard/index";
 import Appointments from "./pages/Appointments";
 import HealthRecords from "./pages/HealthRecords";
 import AIDiagnostics from "./pages/AIDiagnostics";

@@ -9,6 +9,7 @@ import { AuthContext } from "@/App";
 import { Sparkles as SparklesIcon } from "lucide-react";
 import geminiApiService from "./GeminiApiService";
 import googleSpeechService from "./GoogleSpeechService";
+import { useNavigate } from "react-router-dom";
 
 // Type declarations for the Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -207,6 +208,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const audioChunksRef = useRef<Blob[]>([]);
   
   const { userType } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   // Simulate the AI persona
   const doctorName = "Dr. AIDA";
@@ -668,6 +670,56 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     setCurrentSpeakingMessageId(null);
   };
   
+  // Handle the modal close properly
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation(); // Prevent event bubbling
+    }
+    
+    // Stop any speech before closing
+    stopSpeaking();
+    
+    // Stop any ongoing recording
+    if (isRecording) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (error) {
+          console.error("Error stopping speech recognition:", error);
+        }
+      }
+      
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (error) {
+          console.error("Error stopping media recorder:", error);
+        }
+      }
+      
+      setIsRecording(false);
+    }
+    
+    // Reset all state
+    setMessages([]);
+    setInputMessage("");
+    setIsMounted(false);
+    setIsGenerating(false);
+    setCurrentSpeakingMessageId(null);
+    setShowLanguageSelector(false);
+    setShowVoiceSelector(false);
+    
+    // Navigate to provider dashboard if the user is a provider
+    if (userType === "provider") {
+      navigate('/provider-dashboard');
+    }
+    
+    // Call the parent's onClose to actually close the dialog
+    setTimeout(() => {
+      onClose();
+    }, 10);
+  };
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -873,7 +925,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-8" onClick={onClose}>
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-8" onClick={handleClose}>
       <div 
         ref={modalRef}
         className="bg-card w-full max-w-3xl rounded-xl shadow-lg border border-border flex flex-col h-[80vh] overflow-hidden transition-all duration-300 ease-in-out transform animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-5"
@@ -1036,14 +1088,9 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
             )}
             
             {/* Close Button */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onClose} 
-              className="text-muted-foreground hover:bg-red-100 hover:text-red-500 transition-colors"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
+            <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full hover:bg-red-200/10 hover:text-red-400">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
             </Button>
           </div>
         </div>

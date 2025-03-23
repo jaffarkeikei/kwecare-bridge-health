@@ -9,6 +9,7 @@ import { AuthContext } from "@/App";
 import { Sparkles as SparklesIcon } from "lucide-react";
 import geminiApiService from "./GeminiApiService";
 import googleSpeechService from "./GoogleSpeechService";
+import { useNavigate } from "react-router-dom";
 
 // Type declarations for the Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -249,6 +250,7 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
   const audioChunksRef = useRef<Blob[]>([]);
   
   const { userType } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   // Simulate the AI persona
   const assistantName = "AIDA";
@@ -348,98 +350,78 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
     };
   }, []);
   
+  // Completely revise speech recognition to ensure it works properly
   // Toggle recording state
   const toggleRecording = async () => {
     if (isRecording) {
       // Stop recording
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch (error) {
+          console.error("Error stopping speech recognition:", error);
+        }
       }
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
+      
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (error) {
+          console.error("Error stopping media recorder:", error);
+        }
       }
+      
       setIsRecording(false);
     } else {
-      // Start recording
+      // Start recording - always try browser speech recognition first as it's most reliable
       try {
-        // We use Web Speech API for transcription if Google Speech API is not set up
-        if (!googleSpeechService.isApiEnabled()) {
-          // Fall back to Web Speech API
-          useWebSpeechRecognition();
-        } else {
-          // Use advanced Google Speech API for better accuracy
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Check microphone permissions first
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Store the stream for later use
+        const tracks = stream.getAudioTracks();
+        
+        // Always use Web Speech API since it's more reliable
+        const webSpeechSuccess = await useWebSpeechRecognition();
+        
+        // If Web Speech API fails or isn't available, try Google Speech API
+        if (!webSpeechSuccess) {
+          const googleSpeechSuccess = await useGoogleSpeechAPI(stream);
           
-          mediaRecorderRef.current = new MediaRecorder(stream);
-          audioChunksRef.current = [];
-          
-          mediaRecorderRef.current.ondataavailable = (event) => {
-            audioChunksRef.current.push(event.data);
-          };
-          
-          mediaRecorderRef.current.onstop = async () => {
-            // Create audio blob from chunks
-            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-            
-            try {
-              // Convert Blob to ArrayBuffer before transcribing
-              const arrayBuffer = await audioBlob.arrayBuffer();
-              
-              // Transcribe using Google Speech API
-              const transcription = await googleSpeechService.transcribeAudio(arrayBuffer);
-              
-              if (transcription && transcription.trim()) {
-                setInputMessage(transcription);
-                
-                // Auto-submit if the transcription is complete
-                if (transcription.trim().endsWith('.') || 
-                    transcription.trim().endsWith('?') || 
-                    transcription.trim().endsWith('!') ||
-                    transcription.trim().length > 5) {
-                  
-                  // Add a small delay to allow the user to see what was transcribed
-                  setTimeout(() => {
-                    handleSubmit({
-                      preventDefault: () => {}
-                    } as React.FormEvent);
-                  }, 500);
-                }
-              }
-            } catch (error) {
-              console.error("Error transcribing audio:", error);
-            } finally {
-              // Stop all tracks to release the microphone
-              stream.getTracks().forEach(track => track.stop());
-            }
-          };
-          
-          mediaRecorderRef.current.start();
-          setIsRecording(true);
+          if (!googleSpeechSuccess) {
+            // If both methods fail, clean up
+            tracks.forEach(track => track.stop());
+            throw new Error("Both speech recognition methods failed");
+          }
         }
       } catch (error) {
-        console.error("Error accessing microphone:", error);
+        console.error("Error starting speech recognition:", error);
         setIsRecording(false);
+        
+        // Provide feedback to user
+        setInputMessage("Error accessing microphone. Please check browser permissions.");
       }
     }
   };
   
-  // Web Speech API fallback
-  const useWebSpeechRecognition = () => {
+  // Web Speech API for speech recognition
+  const useWebSpeechRecognition = async () => {
     // Check if browser supports speech recognition
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      console.error("Speech recognition not supported in this browser");
-      return;
+      console.warn("Web Speech API not supported in this browser, trying Google Speech API");
+      return false;
     }
     
     try {
       recognitionRef.current = new SpeechRecognition();
       
       // Configure recognition
-      recognitionRef.current.continuous = false;
+      recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = selectedLanguage.code;
+      recognitionRef.current.maxAlternatives = 1;
       
       // Start recognition
       recognitionRef.current.start();
@@ -449,17 +431,24 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = Array.from(event.results)
           .map(result => result[0].transcript)
-          .join('');
+          .join(' ');
         
         setInputMessage(transcript);
         
-        // If the result is final, submit it
-        if (event.results[0]?.isFinal) {
+        // If the result is final and has meaningful content, submit it
+        const lastResult = event.results[event.results.length - 1];
+        if (lastResult?.isFinal && transcript.trim().length > 2) {
+          // Stop recognition before submitting
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+          }
+          
+          // Submit after a small delay
           setTimeout(() => {
             handleSubmit({
               preventDefault: () => {}
             } as React.FormEvent);
-          }, 1000);
+          }, 500);
         }
       };
       
@@ -472,10 +461,84 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
       recognitionRef.current.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
         setIsRecording(false);
+        
+        if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+          setInputMessage("Microphone access denied. Please check browser permissions.");
+        }
       };
+      
+      return true;
     } catch (error) {
-      console.error("Error initializing speech recognition:", error);
-      setIsRecording(false);
+      console.error("Error initializing Web Speech Recognition:", error);
+      return false;
+    }
+  };
+  
+  // Google Speech API for speech recognition
+  const useGoogleSpeechAPI = async (stream?: MediaStream) => {
+    if (!googleSpeechService.isApiEnabled()) {
+      console.warn("Google Speech API not enabled");
+      return false;
+    }
+    
+    try {
+      // Use the provided stream or request microphone access if not provided
+      const audioStream = stream || await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      mediaRecorderRef.current = new MediaRecorder(audioStream);
+      audioChunksRef.current = [];
+      
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorderRef.current.onstop = async () => {
+        // Create audio blob from chunks
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        
+        try {
+          // Convert Blob to ArrayBuffer before transcribing
+          const arrayBuffer = await audioBlob.arrayBuffer();
+          
+          // Transcribe using Google Speech API
+          const transcription = await googleSpeechService.transcribeAudio(arrayBuffer, selectedLanguage.code);
+          
+          if (transcription && transcription.trim()) {
+            setInputMessage(transcription);
+            
+            // Auto-submit if the transcription is complete
+            if (transcription.trim().length > 2) {
+              // Add a small delay to allow the user to see what was transcribed
+              setTimeout(() => {
+                handleSubmit({
+                  preventDefault: () => {}
+                } as React.FormEvent);
+              }, 500);
+            }
+          }
+        } catch (transcriptionError) {
+          console.error("Error transcribing audio:", transcriptionError);
+          setInputMessage("Error transcribing your speech. Please try again.");
+        }
+      };
+      
+      // Start recording
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      
+      // Stop recording after 10 seconds (maximum speech duration)
+      setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+      }, 10000);
+      
+      return true;
+    } catch (error) {
+      console.error("Error initializing Google Speech API:", error);
+      return false;
     }
   };
   
@@ -952,12 +1015,47 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
     if (e) {
       e.stopPropagation(); // Prevent event bubbling
     }
+    
     // Stop any speech before closing
     stopSpeaking();
-    // Clear messages when closing to reset the conversation for next open
+    
+    // Stop any ongoing recording
+    if (isRecording) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (error) {
+          console.error("Error stopping speech recognition:", error);
+        }
+      }
+      
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (error) {
+          console.error("Error stopping media recorder:", error);
+        }
+      }
+      
+      setIsRecording(false);
+    }
+    
+    // Reset all state
     setMessages([]);
+    setInputMessage("");
     setIsMounted(false);
-    onClose();
+    setIsGenerating(false);
+    setCurrentSpeakingMessageId(null);
+    setShowLanguageSelector(false);
+    setShowVoiceSelector(false);
+    
+    // Navigate to the provider dashboard
+    navigate('/provider-dashboard');
+    
+    // Call the parent's onClose to actually close the dialog
+    setTimeout(() => {
+      onClose();
+    }, 10);
   };
 
   return (

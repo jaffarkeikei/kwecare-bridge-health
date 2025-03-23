@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Stethoscope, Sparkles } from "lucide-react";
-import ProviderAssistantAI from "./ProviderAssistantAI";
+import { ProviderAssistantAI } from "./index";
+import { useNavigate } from "react-router-dom";
 
 interface ProviderAssistantButtonProps {
   className?: string;
@@ -13,6 +14,13 @@ const ProviderAssistantButton: React.FC<ProviderAssistantButtonProps> = ({
   autoOpen = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (autoOpen) {
+      setIsOpen(true);
+    }
+  }, [autoOpen]);
   
   const handleToggle = () => {
     setIsOpen(prev => !prev);
@@ -20,6 +28,7 @@ const ProviderAssistantButton: React.FC<ProviderAssistantButtonProps> = ({
   
   const handleClose = () => {
     setIsOpen(false);
+    navigate('/provider-dashboard');
   };
 
   return (
