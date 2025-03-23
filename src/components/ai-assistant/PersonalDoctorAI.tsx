@@ -257,12 +257,51 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   };
 
   // Prebuilt suggestion chips for common questions
-  const suggestions = [
-    "How's my blood sugar doing?",
-    "What medications am I taking?",
-    "When's my next appointment?",
-    "Tips for managing my hypertension"
-  ];
+  const baseQuestions = {
+    diabetes: [
+      "How can I lower my blood sugar?",
+      "What foods should I avoid with diabetes?",
+      "Can exercise help with my blood sugar levels?"
+    ],
+    hypertension: [
+      "What lifestyle changes help with blood pressure?",
+      "How can I reduce my sodium intake?",
+      "Is my current blood pressure reading concerning?"
+    ],
+    medications: [
+      "Are there any side effects I should watch for?",
+      "When should I take my medications?",
+      "Can I take these medications with food?"
+    ],
+    general: [
+      "How can I improve my overall health?",
+      "When should I schedule my next checkup?",
+      "What symptoms should I watch out for?"
+    ]
+  };
+
+  // Function to generate contextual suggestions based on the latest response
+  const getContextualSuggestions = () => {
+    if (messages.length === 0) return baseQuestions.general;
+    
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.role !== 'assistant') return baseQuestions.general;
+    
+    const content = lastMessage.content.toLowerCase();
+    
+    if (content.includes('diabetes') || content.includes('blood sugar') || content.includes('glucose')) {
+      return baseQuestions.diabetes;
+    } else if (content.includes('blood pressure') || content.includes('hypertension')) {
+      return baseQuestions.hypertension;
+    } else if (content.includes('medication') || content.includes('medicine') || content.includes('drug')) {
+      return baseQuestions.medications;
+    }
+    
+    return baseQuestions.general;
+  };
+
+  // Get current three suggestions
+  const currentSuggestions = getContextualSuggestions().slice(0, 3);
 
   // Handle sending a suggestion
   const handleSendSuggestion = (suggestion: string) => {
@@ -406,12 +445,12 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
           </div>
         </ScrollArea>
         
-        {/* Suggestions */}
-        {messages.length < 3 && (
+        {/* Suggestions - show after every AI response */}
+        {messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
           <div className="px-4 py-3 border-t border-border bg-muted/20 shrink-0">
-            <p className="text-xs text-muted-foreground mb-2">Suggested questions:</p>
+            <p className="text-xs text-muted-foreground mb-2">Ask me about:</p>
             <div className="flex flex-wrap gap-2">
-              {suggestions.map((suggestion, index) => (
+              {currentSuggestions.map((suggestion, index) => (
                 <Button
                   key={index}
                   variant="outline"
