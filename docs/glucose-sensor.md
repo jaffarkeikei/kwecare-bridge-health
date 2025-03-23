@@ -50,7 +50,6 @@ The purpose of this gadget is to simulate basic glucose level detection and prov
 ---
 
 ## Circuit Diagram  
-*Placeholder for circuit image*
 Arduino Uno
 +---------------------------+
 |                           |
@@ -61,6 +60,7 @@ Arduino Uno
 | D4  -----> Red LED (+)    |
 |                           |
 +---------------------------+
+
 
 Breadboard Layout:
 +---------------------------------------------+
