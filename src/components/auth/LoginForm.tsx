@@ -51,10 +51,16 @@ const LoginForm = () => {
       // Redirect based on user type
       if (loginType === "provider") {
         toast.info("Accessing healthcare provider dashboard with clinical tools");
+        // Set provider initial login flag to trigger welcome message
+        sessionStorage.setItem("kwecare_initial_provider_login", "new");
+        // Ensure AIDA assistant doesn't auto-open
+        sessionStorage.setItem("kwecare_disable_ai_auto_open", "false");
+        // Use the same path format and set the tab session storage
+        // sessionStorage.setItem("provider_dashboard_tab", "dashboard");
         navigate("/provider-dashboard");
       } else {
         toast.info("Accessing patient dashboard with personal health tools");
-        navigate("/dashboard");
+        navigate("/patient-dashboard");
       }
     }, 1500);
   };

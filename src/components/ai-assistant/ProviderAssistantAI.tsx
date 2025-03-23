@@ -10,6 +10,7 @@ import { Sparkles as SparklesIcon } from "lucide-react";
 import geminiApiService from "./GeminiApiService";
 import googleSpeechService from "./GoogleSpeechService";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 // Type declarations for the Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -226,6 +227,21 @@ interface SpeechRecognitionErrorEvent extends Event {
 }
 
 const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClose }) => {
+  const location = useLocation();
+    if (location.pathname === "/provider-dashboard") {
+      return null;
+    }
+  // IMPORTANT: Force close when URL is /provider-dashboard
+  useEffect(() => {
+    // If we're on the provider dashboard path and this component is open, immediately close it
+    if (window.location.pathname === "/provider-dashboard" && isOpen) {
+      // Small delay to avoid any race conditions
+      setTimeout(() => {
+        onClose();
+      }, 100);
+    }
+  }, [isOpen, onClose]);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -303,6 +319,35 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
   
   // Initial greeting from the AI
   useEffect(() => {
+    // Don't auto-open when the page is first loaded
+    const isFirstLoad = sessionStorage.getItem("provider_dashboard_visited") === null;
+    
+    // Always check if we're on the provider dashboard
+    const isProviderDashboard = window.location.pathname === "/provider-dashboard";
+    
+    // If first load or we're on the provider dashboard, don't auto-open
+    if (isFirstLoad || isProviderDashboard) {
+      // Mark that we've visited the dashboard, but don't auto-open
+      sessionStorage.setItem("provider_dashboard_visited", "true");
+      // Forcefully close the assistant if it's somehow open
+      if (isOpen) {
+        onClose();
+      }
+      return;
+    }
+    
+    // Additional check - if there's a flag to disable auto-open, respect it
+    const shouldDisableAutoOpen = sessionStorage.getItem("kwecare_disable_ai_auto_open") === "true";
+    if (shouldDisableAutoOpen) {
+      sessionStorage.removeItem("kwecare_disable_ai_auto_open");
+      if (isOpen) {
+        onClose();
+      }
+      return;
+    }
+    
+    // Only show the greeting if the assistant is manually opened (isOpen is true)
+    // and we haven't already shown it (isMounted is false)
     if (isOpen && !isMounted) {
       const initialMessage: Message = {
         id: "system-welcome",
@@ -314,7 +359,7 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
       setMessages([initialMessage]);
       setIsMounted(true);
     }
-  }, [isOpen, isMounted]);
+  }, [isOpen, isMounted, onClose]);
   
   // Scroll to bottom whenever messages change
   useEffect(() => {

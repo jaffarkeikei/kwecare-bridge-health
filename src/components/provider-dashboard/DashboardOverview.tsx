@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { 
   AlertCircle, 
   Calendar, 
@@ -11,10 +11,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SeverityIndicator } from "../utils/ui-helpers";
-import { clinicalAlerts, upcomingAppointments, communityHealthData, recentMessages } from "../data/dashboardData";
+import { SeverityIndicator } from "./utils/ui-helpers";
+import { clinicalAlerts, upcomingAppointments, communityHealthData, recentMessages } from "./data/dashboardData";
+import { useNavigate } from "react-router-dom";
 
 const DashboardOverview = () => {
+  const navigate = useNavigate();
+
+  const goToDashboardOverview = () => {
+    navigate("/provider-dashboard");
+    sessionStorage.setItem("provider_dashboard_tab", "dashboard");
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

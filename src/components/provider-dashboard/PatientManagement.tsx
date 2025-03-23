@@ -15,8 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { patients } from "../data/patientData";
-import { StatusBadge, AdherenceBadge } from "../utils/ui-helpers";
+import { patients } from "./data/patientData";
+import { StatusBadge, AdherenceBadge } from "./utils/ui-helpers";
 
 const PatientManagement = () => {
   const navigate = useNavigate();

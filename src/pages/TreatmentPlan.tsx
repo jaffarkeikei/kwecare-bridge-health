@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import Header from "@/components/ui/layout/Header";
 import Footer from "@/components/ui/layout/Footer";
-import TreatmentPlanBuilder from "@/components/provider/TreatmentPlanBuilder";
+import TreatmentPlanBuilder from "@/components/provider-dashboard/TreatmentPlanBuilder";
 import { AuthContext } from "@/App";
 import { useParams } from "react-router-dom";
 

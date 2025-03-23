@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import Header from "@/components/ui/layout/Header";
 import Footer from "@/components/ui/layout/Footer";
-import PatientRecordViewer from "@/components/provider/PatientRecordViewer";
+import PatientRecordViewer from "@/components/provider-dashboard/PatientRecordViewer";
 import { AuthContext } from "@/App";
 
 const Patient = () => {

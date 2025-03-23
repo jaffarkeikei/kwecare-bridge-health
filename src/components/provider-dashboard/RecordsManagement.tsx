@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { patients } from "../data/patientData";
-import { StatusBadge } from "../utils/ui-helpers";
+import { patients } from "./data/patientData";
+import { StatusBadge } from "./utils/ui-helpers";
 
 const RecordsManagement = () => {
   return (

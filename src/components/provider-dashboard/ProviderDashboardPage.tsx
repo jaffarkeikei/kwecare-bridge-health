@@ -23,22 +23,35 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Header from "@/components/ui/layout/Header";
 import Footer from "@/components/ui/layout/Footer";
-import { ProviderAssistantButton } from "@/components/ai-assistant";
+import { useNavigate } from "react-router-dom";
+import { IndigenousLanguage } from "@/components/cultural-safety/LanguageSelector";
 
 // Import tab components
-import DashboardOverview from "./components/DashboardOverview";
-import PatientManagement from "./components/PatientManagement";
-import AppointmentSection from "./components/AppointmentSection";
-import RecordsManagement from "./components/RecordsManagement";
-import AnalyticsSection from "./components/AnalyticsSection";
-import MessagesSection from "./components/MessagesSection";
+import DashboardOverview from "./DashboardOverview";
+import PatientManagement from "./PatientManagement";
+import AppointmentSection from "./AppointmentSection";
+import RecordsManagement from "./RecordsManagement";
+import AnalyticsSection from "./AnalyticsSection";
+import MessagesSection from "./MessagesSection";
 
 // Types
 export type ProviderTab = "dashboard" | "patients" | "appointments" | "records" | "analytics" | "messages";
 
-const ProviderDashboard = () => {
-  const [activeTab, setActiveTab] = useState<ProviderTab>("dashboard");
+const ProviderDashboardPage = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const language = localStorage.getItem("preferredLanguage") as IndigenousLanguage || "english";
+  // Initialize from session storage if available, defaulting to "dashboard"
+  const [activeTab, setActiveTab] = useState<ProviderTab>(() => {
+    const savedTab = sessionStorage.getItem("provider_dashboard_tab");
+    return (savedTab as ProviderTab) || "dashboard";
+  });
   
+  // Update session storage when tab changes
+  useEffect(() => {
+    sessionStorage.setItem("provider_dashboard_tab", activeTab);
+  }, [activeTab]);
+
   // Set dashboard as default tab and check for initial login
   useEffect(() => {
     // Check if this is the initial login after authentication
@@ -89,7 +102,6 @@ const ProviderDashboard = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              <ProviderAssistantButton className="mr-2" autoOpen={false} />
               <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 px-3 py-1 text-sm">
                 Provider Mode
               </Badge>
@@ -216,4 +228,4 @@ const NotificationItems = () => {
   );
 };
 
-export default ProviderDashboard; 
+export default ProviderDashboardPage; 
