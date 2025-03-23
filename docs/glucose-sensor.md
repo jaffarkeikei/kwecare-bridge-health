@@ -52,27 +52,25 @@ The purpose of this gadget is to simulate basic glucose level detection and prov
 ## Circuit Diagram  
 Arduino Uno
 +---------------------------+
-|                           |
-|  5V -----> Breadboard (+) |
+| |
+| 5V -----> Breadboard (+) |
 | GND -----> Breadboard (-) |
-| D2  -----> Touch Sensor S |
-| D3  -----> Green LED (+)  |
-| D4  -----> Red LED (+)    |
-|                           |
+| D2 -----> Touch Sensor S |
+| D3 -----> Green LED (+) |
+| D4 -----> Red LED (+) |
+| |
 +---------------------------+
-
 
 Breadboard Layout:
 +---------------------------------------------+
-|          +5V Rail        |       GND Rail   |
-|           |               |         |       |
-| Touch     |               |         |       |
-| Sensor ---+               +---------+       |
-|                                               
+| +5V Rail | GND Rail |
+| | | | |
+| Touch | | | |
+| Sensor ---+ +---------+ |
+|
 | Green LED (+) ----------> Resistor ----------> D3
 | Red LED (+) ------------> Resistor ----------> D4
 +---------------------------------------------+
-
 ## Example Output  
 - **Generated Glucose Level:** 100 mg/dL → **Green LED** flashes (Healthy range)  
 - **Generated Glucose Level:** 160 mg/dL → **Red LED** flashes (Prediabetic range)
