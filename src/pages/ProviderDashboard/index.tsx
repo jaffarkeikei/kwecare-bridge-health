@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -38,6 +38,39 @@ export type ProviderTab = "dashboard" | "patients" | "appointments" | "records" 
 
 const ProviderDashboard = () => {
   const [activeTab, setActiveTab] = useState<ProviderTab>("dashboard");
+  
+  // Set dashboard as default tab and check for initial login
+  useEffect(() => {
+    // Check if this is the initial login after authentication
+    const isInitialLogin = sessionStorage.getItem("kwecare_initial_provider_login") !== "complete";
+    if (isInitialLogin) {
+      // Make sure dashboard is the active tab on first login
+      setActiveTab("dashboard");
+      // Mark that provider has completed initial login
+      sessionStorage.setItem("kwecare_initial_provider_login", "initialized");
+      
+      // Set a timeout to mark login as complete after dashboard is fully loaded
+      setTimeout(() => {
+        sessionStorage.setItem("kwecare_initial_provider_login", "complete");
+      }, 1000);
+    }
+    
+    // Ensure AI assistant doesn't auto-open by setting this flag
+    sessionStorage.setItem("kwecare_disable_ai_auto_open", "true");
+    
+    // If there's any query parameter in the URL, remove it to ensure clean state
+    if (window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Handle component unmounting if needed
+    return () => {
+      // If provider is navigating away after their first visit, ensure login is marked complete
+      if (sessionStorage.getItem("kwecare_initial_provider_login") === "initialized") {
+        sessionStorage.setItem("kwecare_initial_provider_login", "complete");
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -56,7 +89,7 @@ const ProviderDashboard = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              <ProviderAssistantButton className="mr-2" />
+              <ProviderAssistantButton className="mr-2" autoOpen={false} />
               <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 px-3 py-1 text-sm">
                 Provider Mode
               </Badge>
