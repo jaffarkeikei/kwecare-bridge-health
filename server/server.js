@@ -74,11 +74,21 @@ app.post('/api/tts', async (req, res) => {
           ssmlGender: 'MALE'
         };
         break;
-      default:
+      case 'neutral':
+        // For 'neutral', use the female voice as fallback since neutral isn't supported
+        console.log('Neutral gender not supported by Google TTS, falling back to female voice');
         voiceConfig = {
           languageCode: 'en-US',
-          name: 'en-US-Neural2-A', // Neural Chirp HD neutral voice
-          ssmlGender: 'NEUTRAL'
+          name: 'en-US-Neural2-F', // Neural Chirp HD female voice as fallback
+          ssmlGender: 'FEMALE'
+        };
+        break;
+      default:
+        // Default to female voice
+        voiceConfig = {
+          languageCode: 'en-US',
+          name: 'en-US-Neural2-F', // Neural Chirp HD female voice
+          ssmlGender: 'FEMALE'
         };
     }
     
