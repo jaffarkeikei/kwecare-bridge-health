@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import LanguageSelector from "@/components/cultural-safety/LanguageSelector";
 import { AuthContext } from "@/App";
 import { toast } from "sonner";
+import { PersonalDoctorButton } from "@/components/ai-assistant";
+
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -109,6 +111,7 @@ const Header = () => {
 
         {/* Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4">
+          {isAuthenticated && <PersonalDoctorButton />}
           <LanguageSelector />
           
           {isAuthenticated ? <div className="flex items-center gap-3">
@@ -376,6 +379,7 @@ const Header = () => {
               </>}
             
             <div className="py-2 flex justify-center">
+              {isAuthenticated && <PersonalDoctorButton className="mb-3 w-full" />}
               <LanguageSelector />
             </div>
             
