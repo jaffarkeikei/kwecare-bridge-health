@@ -63,6 +63,7 @@ const Header = () => {
           >
             Home
           </Link>
+          
           <Link
             to="/about"
             className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
@@ -71,6 +72,7 @@ const Header = () => {
           >
             About
           </Link>
+          
           <Link
             to="/features"
             className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
@@ -79,15 +81,63 @@ const Header = () => {
           >
             Features
           </Link>
-          {isAuthenticated && (
-            <Link
-              to={userType === "provider" ? "/provider-dashboard" : "/dashboard"}
-              className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
-                isActive("/dashboard") || isActive("/provider-dashboard") ? "text-kwecare-primary" : "text-foreground/80"
-              }`}
-            >
-              Dashboard
-            </Link>
+          
+          {isAuthenticated && userType === "provider" && (
+            <>
+              <Link
+                to="/provider-dashboard"
+                className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                  isActive("/provider-dashboard") ? "text-kwecare-primary" : "text-foreground/80"
+                }`}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/patient/P123456"
+                className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                  isActive("/patient") ? "text-kwecare-primary" : "text-foreground/80"
+                }`}
+              >
+                Patient Records
+              </Link>
+              <Link
+                to="/treatment-plan"
+                className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                  isActive("/treatment-plan") ? "text-kwecare-primary" : "text-foreground/80"
+                }`}
+              >
+                Treatment Plans
+              </Link>
+            </>
+          )}
+          
+          {isAuthenticated && userType === "patient" && (
+            <>
+              <Link
+                to="/dashboard"
+                className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                  isActive("/dashboard") ? "text-kwecare-primary" : "text-foreground/80"
+                }`}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/appointments"
+                className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                  isActive("/appointments") ? "text-kwecare-primary" : "text-foreground/80"
+                }`}
+              >
+                Appointments
+              </Link>
+              <Link
+                to="/health-records"
+                className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                  isActive("/health-records") ? "text-kwecare-primary" : "text-foreground/80"
+                }`}
+              >
+                Records
+              </Link>
+            </>
           )}
         </nav>
 
@@ -143,6 +193,7 @@ const Header = () => {
             >
               Home
             </Link>
+            
             <Link
               to="/about"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -152,6 +203,7 @@ const Header = () => {
             >
               About
             </Link>
+            
             <Link
               to="/features"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -161,16 +213,69 @@ const Header = () => {
             >
               Features
             </Link>
-            {isAuthenticated && (
-              <Link
-                to={userType === "provider" ? "/provider-dashboard" : "/dashboard"}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
-                  isActive("/dashboard") || isActive("/provider-dashboard") ? "text-kwecare-primary" : "text-foreground/80"
-                }`}
-              >
-                Dashboard
-              </Link>
+            
+            {isAuthenticated && userType === "provider" && (
+              <>
+                <Link
+                  to="/provider-dashboard"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                    isActive("/provider-dashboard") ? "text-kwecare-primary" : "text-foreground/80"
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/patient/P123456"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                    isActive("/patient") ? "text-kwecare-primary" : "text-foreground/80"
+                  }`}
+                >
+                  Patient Records
+                </Link>
+                <Link
+                  to="/treatment-plan"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                    isActive("/treatment-plan") ? "text-kwecare-primary" : "text-foreground/80"
+                  }`}
+                >
+                  Treatment Plans
+                </Link>
+              </>
+            )}
+            
+            {isAuthenticated && userType === "patient" && (
+              <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                    isActive("/dashboard") ? "text-kwecare-primary" : "text-foreground/80"
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/appointments"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                    isActive("/appointments") ? "text-kwecare-primary" : "text-foreground/80"
+                  }`}
+                >
+                  Appointments
+                </Link>
+                <Link
+                  to="/health-records"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                    isActive("/health-records") ? "text-kwecare-primary" : "text-foreground/80"
+                  }`}
+                >
+                  Health Records
+                </Link>
+              </>
             )}
             
             <div className="py-2 flex justify-center">

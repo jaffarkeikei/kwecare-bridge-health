@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,8 @@ import {
   Heart, 
   MessageCircle, 
   Smartphone, 
-  User 
+  User,
+  Stethoscope
 } from "lucide-react";
 
 const Index = () => {
@@ -218,5 +218,8 @@ const Index = () => {
     </div>
   );
 };
+
+// Ensure this component stays only on the homepage
+Index.displayName = "HomePage";
 
 export default Index;

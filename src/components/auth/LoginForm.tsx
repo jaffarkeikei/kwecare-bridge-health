@@ -1,4 +1,3 @@
-
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { AuthContext } from "@/App";
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { setIsAuthenticated } = useContext(AuthContext);
+  const { setIsAuthenticated, setUserType } = useContext(AuthContext);
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,12 +43,17 @@ const LoginForm = () => {
 
       // Update auth context
       setIsAuthenticated(true);
+      setUserType(loginType);
+      
+      // Provide user feedback about the type of account they're accessing
       toast.success(`${loginType === 'provider' ? 'Healthcare provider' : 'Patient'} login successful`);
       
       // Redirect based on user type
       if (loginType === "provider") {
+        toast.info("Accessing healthcare provider dashboard with clinical tools");
         navigate("/provider-dashboard");
       } else {
+        toast.info("Accessing patient dashboard with personal health tools");
         navigate("/dashboard");
       }
     }, 1500);

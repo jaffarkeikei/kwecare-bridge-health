@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,8 @@ import Settings from "./pages/Settings";
 import Features from "./pages/Features";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import Patient from "./pages/Patient";
+import TreatmentPlan from "./pages/TreatmentPlan";
 import { useState, useEffect, createContext } from "react";
 
 // Create context for auth state
@@ -100,6 +101,20 @@ const App = () => {
                 element={isAuthenticated ? 
                   (userType === "provider" ? <ProviderDashboard /> : <Navigate to="/dashboard" />)
                   : <Navigate to="/login" />} 
+              />
+              
+              {/* Patient Record Viewer - Protected, only accessible to providers */}
+              <Route 
+                path="/patient/:patientId" 
+                element={isAuthenticated && userType === "provider" ? 
+                  <Patient /> : <Navigate to="/login" />} 
+              />
+              
+              {/* Treatment Plan Builder - Protected, only accessible to providers */}
+              <Route 
+                path="/treatment-plan" 
+                element={isAuthenticated && userType === "provider" ? 
+                  <TreatmentPlan /> : <Navigate to="/login" />} 
               />
               
               {/* Settings Route - accessible to both user types */}

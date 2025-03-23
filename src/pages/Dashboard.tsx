@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { 
@@ -7,7 +6,8 @@ import {
   FileText, 
   Brain, 
   Globe, 
-  ClipboardCheck
+  ClipboardCheck,
+  User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,8 +71,26 @@ const Dashboard = () => {
 
         <main className="flex-1 pt-28 px-4 md:px-6 pb-16 w-full max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold">My Dashboard</h1>
+            <div>
+              <h1 className="text-3xl font-bold">My Dashboard</h1>
+              <p className="text-muted-foreground mt-1">Manage your health records and appointments</p>
+            </div>
             <VoiceCommandButton />
+          </div>
+
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center">
+            <div className="bg-blue-100 rounded-full p-2 mr-3">
+              <User className="h-5 w-5 text-blue-700" />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-medium text-blue-800">Patient Portal</h2>
+              <p className="text-sm text-blue-700">Your personal health dashboard with self-care tools and appointment tracking.</p>
+            </div>
+            <div>
+              <Button size="sm" variant="outline" className="text-blue-700 border-blue-300">
+                Health Guide
+              </Button>
+            </div>
           </div>
 
           <Tabs 
