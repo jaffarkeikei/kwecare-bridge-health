@@ -104,12 +104,6 @@ const Header = () => {
               <Link to="/dashboard" className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${isActive("/dashboard") ? "text-kwecare-primary" : "text-foreground/80"}`}>
                 Dashboard
               </Link>
-              <Link to="/appointments" className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${isActive("/appointments") ? "text-kwecare-primary" : "text-foreground/80"}`}>
-                Appointments
-              </Link>
-              <Link to="/health-records" className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${isActive("/health-records") ? "text-kwecare-primary" : "text-foreground/80"}`}>
-                Health Records
-              </Link>
             </>}
         </nav>
 
@@ -361,12 +355,6 @@ const Header = () => {
             {isAuthenticated && userType === "patient" && <>
                 <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${isActive("/dashboard") ? "text-kwecare-primary" : "text-foreground/80"}`}>
                   Dashboard
-                </Link>
-                <Link to="/appointments" onClick={() => setIsMobileMenuOpen(false)} className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${isActive("/appointments") ? "text-kwecare-primary" : "text-foreground/80"}`}>
-                  Appointments
-                </Link>
-                <Link to="/health-records" onClick={() => setIsMobileMenuOpen(false)} className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${isActive("/health-records") ? "text-kwecare-primary" : "text-foreground/80"}`}>
-                  Health Records
                 </Link>
                 
                 {/* Patient-specific profile and settings in mobile menu */}
