@@ -560,7 +560,7 @@ const ProviderDashboard = () => {
                             <div className="flex flex-wrap gap-1">
                               {patient.conditions.map((condition, i) => (
                                 <Badge key={i} variant="outline" className="text-xs">
-                                  {condition}
+                                {condition}
                                 </Badge>
                               ))}
                             </div>
@@ -575,7 +575,7 @@ const ProviderDashboard = () => {
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
                                   Actions
-                                </Button>
+                              </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => handlePatientSelect(patient.id)}>
@@ -622,8 +622,8 @@ const ProviderDashboard = () => {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle className="text-xl">Appointment Schedule</CardTitle>
-                  <CardDescription>Manage your upcoming appointments with patients</CardDescription>
+              <CardTitle className="text-xl">Appointment Schedule</CardTitle>
+              <CardDescription>Manage your upcoming appointments with patients</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button>
@@ -661,7 +661,7 @@ const ProviderDashboard = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-xl">Medical Records</CardTitle>
-                  <CardDescription>Access and manage patient health records</CardDescription>
+              <CardDescription>Access and manage patient health records</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <Input
@@ -816,7 +816,7 @@ const ProviderDashboard = () => {
         <main className="flex-1 pt-28 px-4 md:px-6 pb-16 w-full max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold">Healthcare Provider Dashboard</h1>
+            <h1 className="text-3xl font-bold">Healthcare Provider Dashboard</h1>
               <p className="text-muted-foreground mt-1">Manage patients, view clinical alerts, and access provider tools</p>
             </div>
             
