@@ -10,7 +10,7 @@ class GoogleSpeechService {
   private isSpeaking = false;
   private speakingAudio: HTMLAudioElement | null = null;
   private backendUrl = 'http://localhost:3002'; // Backend server URL
-  private useFallbackOnly = true; // Always use browser speech for now until Google Cloud is enabled
+  private useFallbackOnly = false; // Set to false to use Google Cloud TTS
 
   initialize(keyFilePath: string) {
     this.keyFilePath = keyFilePath;

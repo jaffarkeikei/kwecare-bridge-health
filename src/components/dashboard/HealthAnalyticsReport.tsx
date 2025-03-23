@@ -18,7 +18,7 @@ import {
   Download, 
   FileText, 
   Printer, 
-  ChartPie, 
+  PieChart as PieChartIcon, 
   Eye, 
   Clock8, 
   Activity,
@@ -781,7 +781,7 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
         <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ChartPie className="h-5 w-5 text-primary" />
+              <PieChartIcon className="h-5 w-5 text-primary" />
               Medication Adherence
             </CardTitle>
             <CardDescription>
@@ -893,7 +893,7 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
         <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ChartPie className="h-5 w-5 text-primary" />
+              <PieChartIcon className="h-5 w-5 text-primary" />
               Appointment Adherence
             </CardTitle>
             <CardDescription>
