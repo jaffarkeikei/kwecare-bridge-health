@@ -174,6 +174,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const [typingIndex, setTypingIndex] = useState(0);
   const [currentSpeakingMessageId, setCurrentSpeakingMessageId] = useState<string | null>(null);
   const [voicePersona, setVoicePersona] = useState<string>("female"); // Options: female, male, neutral
+  const [showVoiceSelector, setShowVoiceSelector] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -776,17 +777,14 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
 
   // Add a new function to handle user-initiated speech (required by browsers)
   const handleVoiceButtonClick = () => {
-    const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
-    if (lastAssistantMessage) {
-      // First ensure the speech synthesis is initialized by speaking a silent message
-      // This is a workaround for browsers that require user interaction before speech
-      const silence = new SpeechSynthesisUtterance('');
-      silence.volume = 0;
-      window.speechSynthesis.speak(silence);
-      
-      // Then speak the actual message
-      const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
-      speakText(plainTextResponse, lastAssistantMessage.id);
+    // Toggle voice selector visibility
+    setShowVoiceSelector(prev => !prev);
+    
+    // If there are assistant messages, speak the last one
+    const assistantMessages = messages.filter(msg => msg.role === 'assistant');
+    if (assistantMessages.length > 0) {
+      const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
+      speakText(lastAssistantMessage.content, lastAssistantMessage.id);
     }
   };
 
@@ -853,63 +851,49 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                     <Volume2 className="h-4 w-4" />
                   </Button>
                   
-                  {/* Voice selector dropdown that appears on hover */}
-                  <div className="absolute right-0 mt-1 w-48 bg-card rounded-md shadow-lg border border-border hidden group-hover:block z-50">
-                    <div className="p-1 text-xs font-medium text-muted-foreground flex items-center">
-                      <SparklesIcon className="h-3 w-3 mr-1 text-primary" />
-                      <span>Google Chirp HD Voice</span>
+                  {/* Voice selector dropdown that appears on click */}
+                  {showVoiceSelector && (
+                    <div className="absolute right-0 mt-1 w-48 bg-card rounded-md shadow-lg border border-border z-50">
+                      <div className="p-1 text-xs font-medium text-muted-foreground flex items-center">
+                        <SparklesIcon className="h-3 w-3 mr-1 text-primary" />
+                        <span>Google Neural2 HD Voice</span>
+                      </div>
+                      <div className="px-1 pb-1">
+                        <Button
+                          variant={voicePersona === "female" ? "default" : "ghost"}
+                          size="sm"
+                          className="w-full justify-start text-xs"
+                          onClick={() => {
+                            setVoicePersona("female");
+                            // Immediately try the voice
+                            setTimeout(() => {
+                              const silence = new SpeechSynthesisUtterance('');
+                              silence.volume = 0;
+                              window.speechSynthesis.speak(silence);
+                            }, 100);
+                          }}
+                        >
+                          Female (Neural2 HD)
+                        </Button>
+                        <Button
+                          variant={voicePersona === "male" ? "default" : "ghost"}
+                          size="sm"
+                          className="w-full justify-start text-xs"
+                          onClick={() => {
+                            setVoicePersona("male");
+                            // Immediately try the voice
+                            setTimeout(() => {
+                              const silence = new SpeechSynthesisUtterance('');
+                              silence.volume = 0;
+                              window.speechSynthesis.speak(silence);
+                            }, 100);
+                          }}
+                        >
+                          Male (Neural2 HD)
+                        </Button>
+                      </div>
                     </div>
-                    <div className="px-1 pb-1">
-                      <Button
-                        variant={voicePersona === "female" ? "default" : "ghost"}
-                        size="sm"
-                        className="w-full justify-start text-xs"
-                        onClick={() => {
-                          setVoicePersona("female");
-                          // Immediately try the voice
-                          setTimeout(() => {
-                            const silence = new SpeechSynthesisUtterance('');
-                            silence.volume = 0;
-                            window.speechSynthesis.speak(silence);
-                          }, 100);
-                        }}
-                      >
-                        Female (Chirp HD)
-                      </Button>
-                      <Button
-                        variant={voicePersona === "male" ? "default" : "ghost"}
-                        size="sm"
-                        className="w-full justify-start text-xs"
-                        onClick={() => {
-                          setVoicePersona("male");
-                          // Immediately try the voice
-                          setTimeout(() => {
-                            const silence = new SpeechSynthesisUtterance('');
-                            silence.volume = 0;
-                            window.speechSynthesis.speak(silence);
-                          }, 100);
-                        }}
-                      >
-                        Male (Chirp HD)
-                      </Button>
-                      <Button
-                        variant={voicePersona === "neutral" ? "default" : "ghost"}
-                        size="sm"
-                        className="w-full justify-start text-xs"
-                        onClick={() => {
-                          setVoicePersona("neutral");
-                          // Immediately try the voice
-                          setTimeout(() => {
-                            const silence = new SpeechSynthesisUtterance('');
-                            silence.volume = 0;
-                            window.speechSynthesis.speak(silence);
-                          }, 100);
-                        }}
-                      >
-                        Neutral (Chirp HD)
-                      </Button>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </>
             )}

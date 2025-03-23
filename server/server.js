@@ -7,11 +7,20 @@ const util = require('util');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3002; // Using port 3002 to avoid conflicts
+// Load environment variables from .env file if dotenv is installed
+try {
+  require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+  console.log('Loaded environment variables from .env file');
+} catch (err) {
+  console.log('dotenv not found, using default environment variables');
+}
 
-// Enable CORS for the frontend
+// Use the environment variable for port or default to 3002
+const PORT = process.env.VITE_TTS_SERVER_PORT || process.env.PORT || 3002;
+
+// Enable CORS for the frontend - include any potential development ports
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000'] // Allow multiple origins
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:8080', 'http://localhost:3000']
 }));
 app.use(express.json());
 

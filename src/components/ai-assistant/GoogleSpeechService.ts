@@ -9,8 +9,15 @@ class GoogleSpeechService {
   private keyFilePath: string | null = null;
   private isSpeaking = false;
   private speakingAudio: HTMLAudioElement | null = null;
-  private backendUrl = 'http://localhost:3002'; // Backend server URL
+  private backendUrl: string;
   private useFallbackOnly = true; // Always use browser speech for now until Google Cloud is enabled
+
+  constructor() {
+    // Get port from environment variable or use default 3002
+    const port = import.meta.env.VITE_TTS_SERVER_PORT || 3002;
+    this.backendUrl = `http://localhost:${port}`;
+    console.log(`TTS server URL configured as: ${this.backendUrl}`);
+  }
 
   initialize(keyFilePath: string) {
     this.keyFilePath = keyFilePath;
