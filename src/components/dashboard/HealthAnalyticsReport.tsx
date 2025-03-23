@@ -18,7 +18,7 @@ import {
   Download, 
   FileText, 
   Printer, 
-  ChartPie, 
+  PieChart as ChartPie,
   Eye, 
   Clock8, 
   Activity,
