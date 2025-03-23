@@ -3035,7 +3035,7 @@ const ProviderDashboard = () => {
 
       {/* Report Generation Dialog */}
       <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto" id="analytics-report-content">
+        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Analytics Report with AI Recommendations</DialogTitle>
             <DialogDescription>
@@ -3059,9 +3059,178 @@ const ProviderDashboard = () => {
               </div>
             ) : (
               <>
+                {/* Report Header */}
+                <div className="bg-blue-600 p-5 rounded-md text-white mb-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-white h-10 w-10 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-bold text-lg">K</span>
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">KweCare Healthcare</h2>
+                      <p className="text-sm opacity-90">Population Health Analytics Report</p>
+                    </div>
+                  </div>
+                  <div className="text-sm">
+                    <p>Generated on {new Date().toLocaleDateString()} by Dr. Rebecca Taylor</p>
+                    <p>Timeframe: {analyticsTimeframe === 'month' ? 'Last Month' : 
+                                 analyticsTimeframe === 'quarter' ? 'Last Quarter' : 
+                                 analyticsTimeframe === 'year' ? 'Last Year' : 'All Time'}</p>
+                    <p>Community Filter: {analyticsFilter === 'all' ? 'All Communities' : analyticsFilter}</p>
+                  </div>
+                </div>
+                
+                {/* Executive Summary */}
+                <div className="border border-gray-200 rounded-md p-5 bg-gray-50 mb-6">
+                  <h3 className="text-lg font-semibold text-blue-800 border-b-2 border-blue-600 pb-1 mb-3">
+                    Executive Summary
+                  </h3>
+                  <p className="text-sm leading-relaxed">
+                    This report analyzes healthcare data across Indigenous communities to provide actionable 
+                    insights on patient engagement, treatment efficacy, and cultural integration opportunities.
+                    Key findings indicate that communities with traditional knowledge integration show significantly 
+                    better health outcomes, particularly for chronic conditions like diabetes and mental health issues.
+                    For the {analyticsTimeframe} period, overall patient engagement increased by 12%, with notable 
+                    improvement in appointment adherence.
+                  </p>
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
+                    <strong>AI Analysis:</strong> Based on cross-community data analysis, we recommend prioritizing 
+                    diabetes prevention programs in White River community, expanding mental health services that 
+                    integrate traditional practices, and transitioning appropriate follow-up appointments to 
+                    telemedicine to improve adherence rates.
+                  </div>
+                </div>
+                
+                {/* Key Metrics */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-blue-800 border-b-2 border-blue-600 pb-1 mb-3">
+                    Key Metrics
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="border rounded-md p-4">
+                      <h4 className="text-sm font-medium text-gray-500">Total Patients</h4>
+                      <p className="text-2xl font-bold">128</p>
+                      <p className="text-xs text-green-600">↑ 12% from previous {analyticsTimeframe}</p>
+                    </div>
+                    
+                    <div className="border rounded-md p-4">
+                      <h4 className="text-sm font-medium text-gray-500">Appointment Adherence</h4>
+                      <p className="text-2xl font-bold">82%</p>
+                      <p className="text-xs text-green-600">↑ 5% from previous {analyticsTimeframe}</p>
+                    </div>
+                    
+                    <div className="border rounded-md p-4">
+                      <h4 className="text-sm font-medium text-gray-500">Traditional Knowledge Integration</h4>
+                      <p className="text-2xl font-bold">65%</p>
+                      <p className="text-xs text-green-600">↑ 15% from previous {analyticsTimeframe}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Patient Visit Types Chart */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-blue-800 border-b-2 border-blue-600 pb-1 mb-3">
+                    Visit Type Trends
+                  </h3>
+                  <div className="border rounded-md p-4">
+                    <h4 className="font-medium mb-2">Patient Visit Types</h4>
+                    <div className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={monthlyPatientVisits}
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <RechartsTooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="inPerson" stroke="#8884d8" name="In-Person" />
+                          <Line type="monotone" dataKey="virtual" stroke="#82ca9d" name="Virtual" />
+                          <Line type="monotone" dataKey="traditional" stroke="#ffc658" name="Traditional Consult" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Condition Prevalence and Demographics Charts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="border rounded-md p-4">
+                    <h4 className="font-medium mb-2">Condition Prevalence</h4>
+                    <div className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={conditionPrevalence}
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <RechartsTooltip />
+                          <Bar dataKey="value" fill="#8884d8" name="Patients (%)" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-md p-4">
+                    <h4 className="font-medium mb-2">Patient Age Distribution</h4>
+                    <div className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={patientAgeDistribution}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {patientAgeDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Treatment Outcomes Chart */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-blue-800 border-b-2 border-blue-600 pb-1 mb-3">
+                    Treatment Outcomes
+                  </h3>
+                  <div className="border rounded-md p-4">
+                    <h4 className="font-medium mb-2">Patient health status changes by condition category</h4>
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={treatmentOutcomes}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          layout="vertical"
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis dataKey="name" type="category" />
+                          <RechartsTooltip />
+                          <Legend />
+                          <Bar dataKey="improved" stackId="a" fill="#82ca9d" name="Improved" />
+                          <Bar dataKey="stable" stackId="a" fill="#ffc658" name="Stable" />
+                          <Bar dataKey="deteriorated" stackId="a" fill="#ff8042" name="Deteriorated" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* AI Generated Recommendations */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-blue-800 border-b-2 border-blue-600 pb-1 mb-3">
+                    <Brain className="h-5 w-5 inline mr-2 text-blue-600" />
                     AI-Generated Recommendations
                   </h3>
                   
@@ -3089,9 +3258,10 @@ const ProviderDashboard = () => {
                   </div>
                 </div>
                 
+                {/* Suggested Next Steps */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <CalendarClock className="h-5 w-5 text-emerald-600" />
+                  <h3 className="text-lg font-semibold text-blue-800 border-b-2 border-blue-600 pb-1 mb-3">
+                    <CalendarClock className="h-5 w-5 inline mr-2 text-emerald-600" />
                     Suggested Next Steps
                   </h3>
                   
@@ -3129,7 +3299,7 @@ const ProviderDashboard = () => {
                   <Button variant="outline" onClick={() => setReportModalOpen(false)}>
                     Close
                   </Button>
-                  <Button onClick={handleDownloadReport}>
+                  <Button onClick={handleGenerateReport}>
                     <Download className="h-4 w-4 mr-2" />
                     Download Report
                   </Button>
