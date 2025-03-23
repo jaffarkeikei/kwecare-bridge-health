@@ -118,7 +118,12 @@ const formatMessageContent = (content: string) => {
   content = content.replace(/\*\*(.*?):\*\*/g, '<h3 class="font-semibold text-primary my-2 text-left">$1:</h3>');
   
   // Format bullet points with proper spacing and styling
-  content = content.replace(/\* (.*?)(?=\n|$)/g, '<li class="ml-5 pl-1 text-left">$1</li>');
+  content = content.replace(/\* (.*?)(?=\n|$)/g, (match, innerText, offset, fullText) => {
+    // Count previous bullet points to determine the number
+    const previousBullets = fullText.substring(0, offset).match(/\* /g) || [];
+    const number = previousBullets.length + 1;
+    return `<li class="ml-5 pl-1 text-left"><span class="font-semibold">${number}.</span> ${innerText}</li>`;
+  });
   
   // Wrap bullet point lists in ul tags
   content = content.replace(/<li.*?>(.*?)<\/li>(\s*<li.*?>.*?<\/li>)*/gs, '<ul class="my-2 text-left">$&</ul>');
@@ -747,15 +752,104 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const handleVoiceButtonClick = () => {
     const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
     if (lastAssistantMessage) {
-      // First ensure the speech synthesis is initialized by speaking a silent message
-      // This is a workaround for browsers that require user interaction before speech
-      const silence = new SpeechSynthesisUtterance('');
-      silence.volume = 0;
-      window.speechSynthesis.speak(silence);
+      // This is a direct user interaction, so we can play audio now
+      // Modern browsers require a direct user gesture to allow audio playback
       
-      // Then speak the actual message
+      // Get the last message content
       const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
-      speakText(plainTextResponse, lastAssistantMessage.id);
+      
+      // First try using browser's built-in speech directly since it bypasses autoplay restrictions
+      if (window.speechSynthesis && false) { // Disabled for now, using Google TTS
+        try {
+          // Create utterance
+          const utterance = new SpeechSynthesisUtterance(plainTextResponse);
+          
+          // Set voice based on selected persona
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            let selectedVoice = null;
+            if (voicePersona === 'female') {
+              selectedVoice = voices.find(v => v.name.includes('Female') && v.lang.startsWith('en'));
+            } else if (voicePersona === 'male') {
+              selectedVoice = voices.find(v => v.name.includes('Male') && v.lang.startsWith('en'));
+            } else {
+              selectedVoice = voices.find(v => v.lang.startsWith('en'));
+            }
+            
+            if (selectedVoice) {
+              utterance.voice = selectedVoice;
+            }
+          }
+          
+          // Speak immediately (this works because it's triggered by a click)
+          window.speechSynthesis.speak(utterance);
+          
+          setIsSpeaking(true);
+          setCurrentSpeakingMessageId(lastAssistantMessage.id);
+          
+          // Handle end of speech
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            setCurrentSpeakingMessageId(null);
+          };
+          
+          return; // Exit early if browser speech was successful
+        } catch (error) {
+          console.error("Browser speech synthesis failed:", error);
+          // Continue to Google TTS as fallback
+        }
+      }
+
+      // Otherwise try Google TTS
+      try {
+        // Set UI state first
+        setIsSpeaking(true);
+        setCurrentSpeakingMessageId(lastAssistantMessage.id);
+        
+        // Create an audio context - this MUST be inside a user gesture handler
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          // Create and start the audio context
+          const audioContext = new AudioContext();
+          
+          // Perform a simple operation to keep it active
+          const oscillator = audioContext.createOscillator();
+          oscillator.connect(audioContext.destination);
+          oscillator.frequency.value = 0; // Silent
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.001); // Stop immediately
+          
+          console.log("Audio context initialized with user gesture");
+        }
+        
+        // Directly call the speech service - now that we're in a user gesture handler
+        // this should work properly with the audio context initialized above
+        googleSpeechService.speakText(plainTextResponse, voicePersona)
+          .catch(err => {
+            console.error("Error with Google TTS, forced fallback to browser speech:", err);
+            
+            // Fall back to browser speech synthesis as a last resort
+            if (window.speechSynthesis) {
+              const utterance = new SpeechSynthesisUtterance(plainTextResponse);
+              utterance.onend = () => {
+                setIsSpeaking(false);
+                setCurrentSpeakingMessageId(null);
+              };
+              window.speechSynthesis.speak(utterance);
+            } else {
+              // No fallback available
+              setIsSpeaking(false);
+              setCurrentSpeakingMessageId(null);
+              alert("Speech synthesis is not supported in this browser.");
+            }
+          });
+          
+      } catch (error) {
+        console.error("Error initializing speech with user gesture:", error);
+        setIsSpeaking(false);
+        setCurrentSpeakingMessageId(null);
+        alert("Audio playback failed. Please try a different browser or check your browser settings.");
+      }
     }
   };
 

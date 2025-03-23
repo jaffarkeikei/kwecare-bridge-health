@@ -57,6 +57,20 @@ app.post('/api/tts', async (req, res) => {
       return res.status(400).json({ error: 'Text is required' });
     }
     
+    // Clean up text - remove any "Hello Sarah" prefixes
+    const cleanedText = text.replace(/^(Hello Sarah,?\s*)/i, '');
+    
+    // Replace asterisk bullet points with numbered points for better TTS reading
+    const numberedText = cleanedText.replace(/\n\s*\*\s*/g, (match, index, fullText) => {
+      // Count how many asterisks have appeared before this one to determine number
+      const previousAsterisks = fullText.substring(0, index).match(/\n\s*\*\s*/g) || [];
+      const number = previousAsterisks.length + 1;
+      return `\n${number}. `;
+    });
+    
+    // Replace "AI:" prefix if present
+    const finalText = numberedText.replace(/^AI:\s*/i, '');
+    
     // Configure voice based on the selected type
     let voiceConfig;
     switch(voiceType) {
@@ -114,7 +128,7 @@ app.post('/api/tts', async (req, res) => {
     
     // Build the request
     const request = {
-      input: { text },
+      input: { text: finalText },
       voice: voiceConfig,
       audioConfig: {
         audioEncoding: 'MP3',
@@ -123,7 +137,7 @@ app.post('/api/tts', async (req, res) => {
       },
     };
     
-    console.log(`Sending TTS request for text: "${text.substring(0, 50)}..."`);
+    console.log(`Sending TTS request for text: "${finalText.substring(0, 50)}..."`);
     
     try {
       // Call Google Cloud TTS API
@@ -164,12 +178,6 @@ app.post('/api/tts', async (req, res) => {
   }
 });
 
-// Serve static files from the public directory
-app.use('/public', express.static(path.join(__dirname, 'public')));
-
-// Add a middleware to handle CORS preflight requests for all routes
-app.options('*', cors());
-
 // Add a test endpoint to check if server is working
 app.get('/api/test', (req, res) => {
   res.json({ 
@@ -177,6 +185,52 @@ app.get('/api/test', (req, res) => {
     apiEnabled
   });
 });
+
+// Special route for audio files with proper headers
+app.get('/public/:filename', (req, res, next) => {
+  const filename = req.params.filename;
+  
+  // Only process MP3 files
+  if (!filename.endsWith('.mp3')) {
+    return next(); // Let the default static middleware handle it
+  }
+  
+  const filePath = path.join(__dirname, 'public', filename);
+  
+  // Check if file exists
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error(`Audio file not found: ${filePath}`);
+      return res.status(404).json({ error: 'Audio file not found' });
+    }
+    
+    // Add specific headers for audio files
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=0',
+      'Access-Control-Allow-Origin': '*' // Allow any origin to access the audio
+    });
+    
+    // Stream the file
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+  });
+});
+
+// Serve static files from the public directory
+app.use('/public', express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.mp3')) {
+      res.set('Content-Type', 'audio/mpeg');
+      res.set('Accept-Ranges', 'bytes');
+      res.set('Access-Control-Allow-Origin', '*');
+    }
+  }
+}));
+
+// Add a middleware to handle CORS preflight requests for all routes
+app.options('*', cors());
 
 // Add a status endpoint to check API status
 app.get('/api/status', (req, res) => {
