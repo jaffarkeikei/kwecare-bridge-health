@@ -183,6 +183,13 @@
   text-align: center;
 }
 
+/* Override root text centering for specific components that need left alignment */
+.text-content-left,
+.ai-message-content,
+.ai-message-content * {
+  text-align: left !important;
+}
+
 /* Adding subtle animations to cards and interactive elements */
 .glass-card, .button, a {
   transition: all 0.25s ease-in-out;
@@ -214,4 +221,80 @@
 .no-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* AI Doctor chat message styling */
+.ai-message-content {
+  text-align: left;
+  text-indent: 0 !important;
+}
+
+.ai-message-content h3 {
+  color: var(--primary);
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  text-align: left;
+  text-indent: 0;
+}
+
+.ai-message-content ul {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  text-align: left;
+  text-indent: 0;
+}
+
+.ai-message-content li {
+  margin-bottom: 0.375rem;
+  position: relative;
+  text-align: left;
+  text-indent: 0;
+}
+
+.ai-message-content p {
+  text-align: left;
+  text-indent: 0;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+.ai-message-content li::before {
+  content: "";
+  position: absolute;
+  left: -1rem;
+  top: 0.5rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background-color: var(--primary);
+  opacity: 0.7;
+}
+
+/* Add styles for special content types */
+.meal-plan-section {
+  border-left: 2px solid var(--primary);
+  padding-left: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.nutrient-info {
+  display: inline-block;
+  background-color: rgba(var(--primary), 0.1);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+  margin-right: 0.375rem;
+}
+
+/* Improve code and preformatted blocks */
+.ai-message-content pre {
+  background-color: rgba(var(--muted), 0.5);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  font-family: monospace;
+  font-size: 0.875rem;
 }

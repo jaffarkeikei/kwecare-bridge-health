@@ -44,6 +44,60 @@ interface PersonalDoctorAIProps {
   onClose: () => void;
 }
 
+// Helper function to format message content with better styling
+const formatMessageContent = (content: string) => {
+  if (!content) return '';
+  
+  // Trim content to remove any leading/trailing whitespace
+  content = content.trim();
+  
+  // Remove any leading tab or spaces from each line
+  content = content.replace(/^[ \t]+/gm, '');
+  
+  // Format section headers (e.g., **Breakfast:**)
+  content = content.replace(/\*\*(.*?):\*\*/g, '<h3 class="font-semibold text-primary my-2 text-left">$1:</h3>');
+  
+  // Format bullet points with proper spacing and styling
+  content = content.replace(/\* (.*?)(?=\n|$)/g, '<li class="ml-5 pl-1 text-left">$1</li>');
+  
+  // Wrap bullet point lists in ul tags
+  content = content.replace(/<li.*?>(.*?)<\/li>(\s*<li.*?>.*?<\/li>)*/gs, '<ul class="my-2 text-left">$&</ul>');
+  
+  // Add special styling for meal plan sections
+  content = content.replace(/<h3.*?>(Breakfast|Lunch|Dinner|Snacks):(.*?)<\/h3>/g, 
+    '<div class="meal-plan-section text-left"><h3 class="font-semibold text-primary my-1 text-left">$1:$2</h3>');
+  
+  // Close the meal plan sections
+  content = content.replace(/<h3.*?>((?!Breakfast|Lunch|Dinner|Snacks).+?):(.*?)<\/h3>/g, 
+    '</div><h3 class="font-semibold text-primary my-1 text-left">$1:$2</h3>');
+    
+  // Fix any unclosed meal plan sections at the end
+  if (content.includes('<div class="meal-plan-section') && 
+      !content.endsWith('</div>')) {
+    content += '</div>';
+  }
+  
+  // Format nutritional information with badges
+  content = content.replace(/\((\d+\s*(calories|kcal|g protein|g carbs|g fat))\)/gi, 
+    '<span class="nutrient-info text-left">$1</span>');
+  
+  // Format paragraphs
+  const paragraphs = content.split('\n\n').filter(p => p.trim());
+  if (paragraphs.length > 1) {
+    return '<div class="ai-message-content text-content-left">' + 
+           paragraphs.map(p => {
+             // Don't double-wrap elements already wrapped in tags
+             if (p.trim().startsWith('<') && p.trim().endsWith('>')) {
+               return p;
+             }
+             return `<p class="mb-3 text-left">${p.trim()}</p>`;
+           }).join('') + 
+           '</div>';
+  }
+  
+  return '<div class="ai-message-content text-content-left">' + content + '</div>';
+};
+
 const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -315,7 +369,15 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                       : 'bg-primary text-primary-foreground'
                     } ${message.role === 'system' ? 'italic text-muted-foreground' : ''}`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    {message.role === 'assistant' ? (
+                      <div 
+                        className="text-sm text-left"
+                        dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
+                        data-formatted="true"
+                      />
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap text-left">{message.content}</p>
+                    )}
                     <div className="mt-1.5 text-xs opacity-70 text-right">
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>

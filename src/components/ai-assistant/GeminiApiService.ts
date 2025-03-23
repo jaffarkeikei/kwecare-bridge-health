@@ -133,7 +133,12 @@ class GeminiApiService {
           data.candidates[0].content && 
           data.candidates[0].content.parts && 
           data.candidates[0].content.parts[0]) {
-        return data.candidates[0].content.parts[0].text;
+        let response = data.candidates[0].content.parts[0].text;
+        
+        // Enhance the formatting of the response
+        response = this.enhanceResponseFormatting(response);
+        
+        return response;
       } else {
         throw new Error('Unexpected response format from Gemini API');
       }
@@ -141,7 +146,8 @@ class GeminiApiService {
       console.error('Error calling Gemini API:', error);
       
       // Fall back to mock response
-      return this.getMockResponse(messages[messages.length - 1].content, patientData);
+      const mockResponse = this.getMockResponse(messages[messages.length - 1].content, patientData);
+      return this.enhanceResponseFormatting(mockResponse);
     }
   }
 
@@ -164,7 +170,43 @@ Instructions:
 3. Do not diagnose but help the patient understand their condition and treatments.
 4. Encourage the patient to follow up with their healthcare provider for serious concerns.
 5. Keep responses concise and focused on the patient's questions.
+6. When providing structured information like meal plans or exercise regimens, use proper formatting:
+   - Use **Section Titles:** for headers (with the colon)
+   - Use * bullet points for lists
+   - Add blank lines between paragraphs
+   - Keep lists consistently formatted for readability
 `;
+  }
+
+  /**
+   * Process and enhance the AI response for better formatting
+   */
+  private enhanceResponseFormatting(response: string): string {
+    // Trim the entire response
+    response = response.trim();
+
+    // Remove any leading whitespace from lines
+    response = response.replace(/^[ \t]+/gm, '');
+    
+    // Make section headers consistent
+    response = response.replace(/([A-Za-z]+):\s*\n/g, '**$1:**\n\n');
+    
+    // Make bullet points consistent
+    response = response.replace(/^[•\-○]\s*(.*?)$/gm, '* $1');
+    
+    // Ensure meal items have bullet points
+    response = response.replace(/^([A-Za-z][\w\s]+):(?!\*)/gm, '* $1:');
+    
+    // Add a line break before lists if missing
+    response = response.replace(/([^\n])\n\*/g, '$1\n\n*');
+    
+    // Ensure paragraph spacing
+    response = response.replace(/([.!?])\s*\n([A-Z])/g, '$1\n\n$2');
+
+    // Clean up excessive newlines
+    response = response.replace(/\n{3,}/g, '\n\n');
+    
+    return response;
   }
 
   /**
