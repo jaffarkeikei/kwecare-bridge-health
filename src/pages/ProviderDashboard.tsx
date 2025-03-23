@@ -930,6 +930,10 @@ const ProviderDashboard = () => {
                             <FileOutput className="h-4 w-4" />
                             <span className="hidden sm:inline">Generate Report</span>
                           </Button>
+                          <Button variant="default" size="sm" className="gap-1 bg-green-600 hover:bg-green-700 text-white border-green-600" onClick={() => handleExportPatientData(patient)}>
+                            <Download className="h-4 w-4" />
+                            <span className="hidden sm:inline">Export Data</span>
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -1533,6 +1537,17 @@ const ProviderDashboard = () => {
     }, 1000);
   };
 
+  // Handle exporting patient data
+  const handleExportPatientData = (patient: (typeof patients)[0]) => {
+    toast.loading(`Preparing data export for ${patient.name}...`);
+    
+    // Simulate API call to export patient data (would be a real API call in production)
+    setTimeout(() => {
+      toast.dismiss();
+      toast.success(`${patient.name}'s data exported successfully`);
+    }, 1000);
+  };
+
   // Handle preview report
   const handlePreviewReport = () => {
     toast.loading("Preparing report preview...");
@@ -1839,9 +1854,6 @@ const ProviderDashboard = () => {
       setGeneratingPatientReport(false);
       
       // Let the DOM update with the content before generating PDF
-      setTimeout(() => {
-        handleDownloadAsPdf("patient-report-content", `patient-report-${patient.name.replace(/\s+/g, '-').toLowerCase()}.pdf`, false);
-      }, 500);
     }, 1500);
   };
 
@@ -2322,9 +2334,9 @@ const ProviderDashboard = () => {
   // Add a dedicated function for patient report PDF generation
   const generatePatientReportPDF = (patient: (typeof patients)[0]) => {
     setSelectedPatientForReport(patient);
-    toast.loading("Generating comprehensive patient report PDF...");
+    toast.loading(`Generating PDF report for ${patient.name}...`);
     
-    // Simulate API call and AI processing time
+    // Simulate API call and AI processing time (would be a real API call in production)
     setTimeout(() => {
       // Generate the same mock data as in generatePatientReport
       const vitalsTrend = [
@@ -2357,6 +2369,8 @@ const ProviderDashboard = () => {
       ];
       
       const treatmentRecommendations = patient.conditions.map(condition => {
+        // Same treatment recommendations logic as in generatePatientReport
+        // ...
         let recommendation = "";
         let evidence = "";
         let confidence = 0;
@@ -2447,377 +2461,12 @@ const ProviderDashboard = () => {
         aiNotes
       });
       
-      // Create and generate PDF directly without using the dialog
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      // PDF styling and content
-      // Helper functions for repeated styling elements
-      const addHeader = (text: string, y: number, fontSize: number = 18) => {
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(fontSize);
-        pdf.setTextColor(44, 62, 80);
-        pdf.text(text, 20, y);
-        pdf.setDrawColor(52, 152, 219);
-        pdf.setLineWidth(0.5);
-        pdf.line(20, y + 1, 190, y + 1);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(11);
-        pdf.setTextColor(0, 0, 0);
-        return y + 8;
-      };
-      
-      const addSubheader = (text: string, y: number) => {
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(14);
-        pdf.setTextColor(52, 73, 94);
-        pdf.text(text, 20, y);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(11);
-        pdf.setTextColor(0, 0, 0);
-        return y + 6;
-      };
-      
-      const addParagraph = (text: string, y: number) => {
-        const splitText = pdf.splitTextToSize(text, 170);
-        pdf.text(splitText, 20, y);
-        return y + (splitText.length * 6);
-      };
-      
-      // Add a new page with proper headers
-      const addNewPage = () => {
-        pdf.addPage();
-        pdf.setFillColor(52, 152, 219);
-        pdf.rect(0, 0, 210, 15, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(10);
-        pdf.text(`KweCare Patient Report - ${patient.name}`, 105, 10, { align: 'center' as "center" });
-        pdf.setTextColor(0, 0, 0);
-        return 30;
-      };
-      
-      // Document title and header
-      pdf.setFillColor(52, 152, 219);
-      pdf.rect(0, 0, 210, 30, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(22);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('KweCare Healthcare', 105, 15, { align: 'center' as "center" });
-      pdf.setFontSize(16);
-      pdf.text('Comprehensive Patient Report', 105, 22, { align: 'center' as "center" });
-      
-      // Patient info section
-      pdf.setFillColor(240, 240, 240);
-      pdf.rect(0, 30, 210, 40, 'F');
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(18);
-      pdf.setTextColor(44, 62, 80);
-      pdf.text(patient.name, 20, 40);
-      
-      // Status color bar
-      const statusColor = patient.status === "stable" ? [16, 185, 129] : 
-                         patient.status === "improving" ? [59, 130, 246] : 
-                         patient.status === "monitoring" ? [245, 158, 11] : 
-                         [239, 68, 68];
-      pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-      pdf.rect(20, 42, 170, 3, 'F');
-      
-      // Patient details in two columns
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
-      pdf.setTextColor(0, 0, 0);
-      
-      // Left column
-      pdf.text('Age:', 20, 50);
-      pdf.text(patient.age.toString(), 50, 50);
-      
-      pdf.text('Community:', 20, 55);
-      pdf.text(patient.community, 50, 55);
-      
-      pdf.text('Last Visit:', 20, 60);
-      pdf.text(patient.lastVisit, 50, 60);
-      
-      // Right column
-      pdf.text('Next Visit:', 110, 50);
-      pdf.text(patient.nextVisit, 140, 50);
-      
-      pdf.text('Status:', 110, 55);
-      pdf.text(patient.status.charAt(0).toUpperCase() + patient.status.slice(1), 140, 55);
-      
-      pdf.text('Adherence:', 110, 60);
-      pdf.text(patient.adherence.charAt(0).toUpperCase() + patient.adherence.slice(1), 140, 60);
-      
-      // Alert indicator if applicable
-      if (patient.alerts > 0) {
-        pdf.setFillColor(239, 68, 68);
-        pdf.circle(15, 40, 3, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(9);
-        pdf.text(patient.alerts.toString(), 15, 40, { align: 'center' as "center" });
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFontSize(11);
-      }
-      
-      let y = 80; // Current Y position for content
-      
-      // Current conditions section
-      y = addHeader('Current Conditions', y);
-      
-      // Create condition boxes
-      patient.conditions.forEach(condition => {
-        pdf.setFillColor(248, 250, 252);
-        pdf.roundedRect(20, y, 170, 20, 2, 2, 'F');
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(condition, 25, y + 7);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(10);
-        
-        // Add condition description
-        const description = condition === "Diabetes Type 2" ? "Managing with medication and lifestyle modifications" :
-                            condition === "Hypertension" ? "Controlled with medication and dietary restrictions" :
-                            condition === "Heart Disease" ? "Requires regular monitoring and medication adherence" :
-                            condition === "Arthritis" ? "Managed with pain medication and physical therapy" :
-                            condition === "Chronic Pain" ? "Pain management protocol in place" :
-                            condition === "Asthma" ? "Managed with inhalers and environmental controls" :
-                            condition === "Migraine" ? "Triggers identified and prevention plan in place" :
-                            condition === "Anxiety" ? "Combination of medication and counseling" :
-                            condition === "Pregnancy" ? "Regular prenatal care and monitoring" :
-                            condition === "Anemia" ? "Iron supplementation and dietary management" :
-                            "Under active treatment and monitoring";
-        
-        pdf.text(description, 25, y + 15);
-        y += 25;
-      });
-      
-      y += 5;
-      
-      // Medication adherence section
-      y = addHeader('Medication Adherence', y);
-      
-      // Adherence visualization
-      pdf.setFillColor(248, 250, 252);
-      pdf.roundedRect(20, y, 170, 30, 2, 2, 'F');
-      
-      // Draw adherence chart (simplified version of the web component)
-      const adherenceColor = medicationAdherence >= 90 ? [16, 185, 129] : 
-                            medicationAdherence >= 80 ? [59, 130, 246] : 
-                            medicationAdherence >= 70 ? [245, 158, 11] : 
-                            [239, 68, 68];
-      
-      // Draw circle
-      const centerX = 45;
-      const centerY = y + 15;
-      const radius = 12;
-      
-      // Background circle
-      pdf.setDrawColor(226, 232, 240);
-      pdf.setLineWidth(2);
-      pdf.circle(centerX, centerY, radius, 'S');
-      
-      // Foreground arc (simplified)
-      pdf.setDrawColor(adherenceColor[0], adherenceColor[1], adherenceColor[2]);
-      pdf.setLineWidth(3);
-      const startAngle = -Math.PI / 2;
-      const endAngle = startAngle + (2 * Math.PI * medicationAdherence / 100);
-      
-      // Manually draw arc since jsPDF doesn't have a direct arc method for circles
-      // Using arc method instead of ellipse to fix type error
-      const steps = 100;
-      for (let i = 0; i < steps; i++) {
-        const angle1 = startAngle + (i / steps) * (endAngle - startAngle);
-        const angle2 = startAngle + ((i + 1) / steps) * (endAngle - startAngle);
-        
-        const x1 = centerX + radius * Math.cos(angle1);
-        const y1 = centerY + radius * Math.sin(angle1);
-        const x2 = centerX + radius * Math.cos(angle2);
-        const y2 = centerY + radius * Math.sin(angle2);
-        
-        pdf.line(x1, y1, x2, y2);
-      }
-      
-      // Add percentage in center
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`${medicationAdherence}%`, centerX - 5, centerY + 4);
-      
-      // Add adherence analysis
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
-      pdf.text('Adherence Analysis:', 70, y + 10);
-      
-      const adherenceText = medicationAdherence >= 90 
-        ? "Excellent medication adherence indicates strong engagement with treatment plan."
-        : medicationAdherence >= 80
-        ? "Good medication adherence, though occasional lapses are noted."
-        : medicationAdherence >= 70
-        ? "Moderate medication adherence suggests barriers that should be addressed."
-        : "Poor medication adherence indicates significant barriers to treatment that require immediate attention.";
-      
-      const splitAdherenceText = pdf.splitTextToSize(adherenceText, 115);
-      pdf.text(splitAdherenceText, 70, y + 18);
-      
-      if (medicationAdherence < 80) {
-        pdf.setFillColor(254, 243, 199);
-        pdf.rect(70, y + 18 + (splitAdherenceText.length * 5), 115, 10, 'F');
-        pdf.setFontSize(9);
-        pdf.setTextColor(146, 64, 14);
-        pdf.text('Suggested intervention: Schedule medication review appointment to address adherence barriers.', 72, y + 24 + (splitAdherenceText.length * 5));
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFontSize(11);
-      }
-      
-      y += 35;
-      
-      // Check if we need a new page
-      if (y > 250) {
-        y = addNewPage();
-      }
-      
-      // AI Treatment Recommendations
-      y = addHeader('AI-Generated Treatment Recommendations', y);
-      
-      treatmentRecommendations.forEach((rec, index) => {
-        // Check if we need a new page
-        if (y > 240) {
-          y = addNewPage();
-        }
-        
-        // Create recommendation box
-        const confidenceColor = rec.confidence >= 90 ? [16, 185, 129] : 
-                               rec.confidence >= 80 ? [59, 130, 246] : 
-                               rec.confidence >= 70 ? [245, 158, 11] : 
-                               [239, 68, 68];
-        
-        pdf.setDrawColor(confidenceColor[0], confidenceColor[1], confidenceColor[2]);
-        pdf.setLineWidth(1.5);
-        pdf.setFillColor(248, 250, 252);
-        pdf.roundedRect(20, y, 170, 35, 2, 2, 'F');
-        pdf.line(20, y, 20, y + 35);
-        
-        // Condition and confidence
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(12);
-        pdf.text(rec.condition, 25, y + 7);
-        
-        // Add confidence badge
-        pdf.setDrawColor(226, 232, 240);
-        pdf.setFillColor(248, 250, 252);
-        pdf.roundedRect(155, y + 4, 30, 6, 3, 3, 'FD');
-        pdf.setFontSize(8);
-        pdf.text(`${rec.confidence}% confidence`, 170, y + 7, { align: 'center' as "center" });
-        
-        // Recommendation text
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(9);
-        const splitRecText = pdf.splitTextToSize(rec.recommendation, 160);
-        pdf.text(splitRecText, 25, y + 13);
-        
-        // Evidence background
-        const evidenceY = y + 13 + (splitRecText.length * 4) + 2;
-        pdf.setFillColor(241, 245, 249);
-        pdf.rect(25, evidenceY, 160, 8, 'F');
-        
-        // Evidence text
-        pdf.setFontSize(8);
-        pdf.setTextColor(100, 116, 139);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Evidence:', 27, evidenceY + 5);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(rec.evidence, 50, evidenceY + 5);
-        pdf.setTextColor(0, 0, 0);
-        
-        y += 40;
-      });
-      
-      // Check if we need a new page
-      if (y > 230) {
-        y = addNewPage();
-      }
-      
-      // Community and Cultural Context
-      y = addHeader('Community and Cultural Context', y);
-      
-      // Split into two columns: Community Insights and Cultural Considerations
-      // Community Insights
-      y = addSubheader('Community Insights', y);
-      
-      communityInsights.forEach((insight, index) => {
-        pdf.setFillColor(248, 250, 252);
-        const splitInsight = pdf.splitTextToSize(insight, 160);
-        pdf.roundedRect(20, y, 170, 6 + (splitInsight.length * 5), 2, 2, 'F');
-        pdf.text('•', 25, y + 5);
-        pdf.text(splitInsight, 30, y + 5);
-        y += 10 + ((splitInsight.length - 1) * 5);
-      });
-      
-      y += 5;
-      
-      // Check if we need a new page
-      if (y > 220) {
-        y = addNewPage();
-      }
-      
-      // Cultural Considerations
-      y = addSubheader('Cultural Considerations', y);
-      
-      culturalConsiderations.forEach((consideration, index) => {
-        pdf.setFillColor(248, 250, 252);
-        const splitConsideration = pdf.splitTextToSize(consideration, 160);
-        pdf.roundedRect(20, y, 170, 6 + (splitConsideration.length * 5), 2, 2, 'F');
-        pdf.text('•', 25, y + 5);
-        pdf.text(splitConsideration, 30, y + 5);
-        y += 10 + ((splitConsideration.length - 1) * 5);
-      });
-      
-      y += 5;
-      
-      // Check if we need a new page
-      if (y > 240) {
-        y = addNewPage();
-      }
-      
-      // AI Clinical Summary
-      y = addHeader('AI Clinical Summary', y);
-      
-      pdf.setFillColor(248, 250, 252);
-      pdf.roundedRect(20, y, 170, 50, 2, 2, 'F');
-      
-      const splitNotes = pdf.splitTextToSize(aiNotes, 160);
-      pdf.text(splitNotes, 25, y + 7);
-      
-      y += 55;
-      
-      // Disclaimer note
-      pdf.setFillColor(239, 246, 255);
-      pdf.roundedRect(20, y, 170, 15, 2, 2, 'F');
-      pdf.setTextColor(30, 64, 175);
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Note:', 25, y + 6);
-      pdf.setFont('helvetica', 'normal');
-      const noteText = 'This report is generated using AI analysis of health data and is intended to assist healthcare providers. All recommendations should be evaluated using clinical judgment and cultural context.';
-      const splitNote = pdf.splitTextToSize(noteText, 160);
-      pdf.text(splitNote, 25, y + 11);
-      
-      // Footer
-      pdf.setDrawColor(226, 232, 240);
-      pdf.setLineWidth(0.5);
-      pdf.line(20, 280, 190, 280);
-      pdf.setTextColor(100, 116, 139);
-      pdf.setFontSize(8);
-      pdf.text('KweCare Healthcare Provider Platform', 105, 285, { align: 'center' as "center" });
-      pdf.text(`Generated: ${new Date().toLocaleString()}`, 105, 290, { align: 'center' as "center" });
-      
-      // Save the PDF
-      pdf.save(`patient-report-${patient.name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
-      
-      toast.dismiss();
-      toast.success("Patient report downloaded successfully");
+      // Generate and download PDF
+      setTimeout(() => {
+        handleDownloadAsPdf("patient-report-content", `patient-report-${patient.name.replace(/\s+/g, '-').toLowerCase()}.pdf`, false);
+        toast.dismiss();
+        toast.success(`Report for ${patient.name} downloaded successfully`);
+      }, 800);
     }, 1500);
   };
 
@@ -3341,6 +2990,24 @@ const ProviderDashboard = () => {
               <>
                 {selectedPatientForReport && patientReportData && (
                   <div className="space-y-6">
+                    {/* Report Header */}
+                    <div className="bg-blue-600 p-5 rounded-md text-white mb-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-white h-10 w-10 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 font-bold text-lg">K</span>
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold">KweCare Healthcare</h2>
+                          <p className="text-sm opacity-90">Patient Health Report</p>
+                        </div>
+                      </div>
+                      <div className="text-sm">
+                        <p>Generated on {new Date().toLocaleDateString()} by Dr. Rebecca Taylor</p>
+                        <p>Patient: {selectedPatientForReport.name} ({selectedPatientForReport.age} years)</p>
+                        <p>Community: {selectedPatientForReport.community}</p>
+                      </div>
+                    </div>
+                    
                     {/* Patient header */}
                     <Card className="overflow-hidden border-l-4" style={{
                       borderLeftColor: selectedPatientForReport.status === "stable" ? "#10b981" : 
@@ -3574,15 +3241,22 @@ const ProviderDashboard = () => {
             )}
           </div>
           
+
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setPatientReportModalOpen(false)}>
               Close
             </Button>
             {!generatingPatientReport && selectedPatientForReport && (
-              <Button onClick={() => generatePatientReportPDF(selectedPatientForReport)}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Download Report
-              </Button>
+              <>
+                <Button onClick={() => generatePatientReportPDF(selectedPatientForReport)}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+                <Button onClick={() => handleExportPatientData(selectedPatientForReport)} className="bg-green-600 hover:bg-green-700 text-white border-green-600">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Data
+                </Button>
+              </>
             )}
           </div>
         </DialogContent>
