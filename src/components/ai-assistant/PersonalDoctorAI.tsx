@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { Bot, User, Send, X, Loader2, Brain, History, Activity, FileHeart, Sparkles } from "lucide-react";
+import { Bot, User, Send, X, Loader2, Brain, History, Activity, FileHeart, Sparkles, Mic, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,6 +8,66 @@ import { Badge } from "@/components/ui/badge";
 import { AuthContext } from "@/App";
 import { Sparkles as SparklesIcon } from "lucide-react";
 import geminiApiService from "./GeminiApiService";
+import googleSpeechService from "./GoogleSpeechService";
+
+// Type declarations for the Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+  interpretation: any;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  isFinal: boolean;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onaudioend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onaudiostart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onnomatch: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onsoundend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onsoundstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognition;
+  prototype: SpeechRecognition;
+}
+
+// Extend the Window interface to include Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
 
 // Mock patient data - in a real app this would come from your backend
 const mockPatientData = {
@@ -103,14 +163,48 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const [inputMessage, setInputMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [typingIndex, setTypingIndex] = useState(0);
+  const [currentSpeakingMessageId, setCurrentSpeakingMessageId] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  
   const { userType } = useContext(AuthContext);
 
   // Simulate the AI persona
   const doctorName = "Dr. AIDA";
   const doctorPersonality = "compassionate, knowledgeable, and culturally aware";
+  
+  // Initialize speech recognition and synthesis
+  useEffect(() => {
+    // Initialize Google Speech API
+    const keyFilePath = import.meta.env.VITE_GOOGLE_SPEECH_KEY_PATH || '';
+    if (keyFilePath) {
+      googleSpeechService.initialize(keyFilePath);
+    } else {
+      console.warn('No Google Speech API key file path found in environment variables');
+    }
+    
+    // For browser speech synthesis (text-to-speech), keep this part
+    if ('speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
+    }
+    
+    return () => {
+      // Clean up speech synthesis when component unmounts
+      if (synthRef.current && utteranceRef.current) {
+        synthRef.current.cancel();
+      }
+    };
+  }, []);
   
   // Initial greeting from the AI
   useEffect(() => {
@@ -179,12 +273,154 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [isOpen, onClose]);
+  
+  // Handle typing effect when AI speaks
+  useEffect(() => {
+    if (currentSpeakingMessageId && typingIndex > 0) {
+      const message = messages.find(msg => msg.id === currentSpeakingMessageId);
+      if (message && typingIndex < message.content.length) {
+        const typingTimeout = setTimeout(() => {
+          setTypingIndex(prev => prev + 1);
+        }, 30); // Adjust typing speed here
+        
+        return () => clearTimeout(typingTimeout);
+      }
+    }
+  }, [typingIndex, currentSpeakingMessageId, messages]);
 
+  // Function to toggle recording
+  const toggleRecording = async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      try {
+        console.log("Starting recording...");
+        // Check browser support
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          console.error("Media devices API not supported");
+          return;
+        }
+        
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Create media recorder
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+        
+        // Set up event handlers
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+        
+        mediaRecorder.onstop = async () => {
+          // Create blob from chunks
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+          
+          // Convert blob to array buffer
+          const arrayBuffer = await audioBlob.arrayBuffer();
+          
+          // Use Google Speech API to transcribe
+          try {
+            const transcript = await googleSpeechService.transcribeAudio(arrayBuffer);
+            setInputMessage(transcript);
+            
+            // Submit if there's content
+            if (transcript.trim()) {
+              setTimeout(() => {
+                if (inputRef.current) {
+                  const form = inputRef.current.form;
+                  if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+              }, 300);
+            }
+          } catch (error) {
+            console.error('Error transcribing audio:', error);
+          }
+          
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        // Add error logging
+        mediaRecorder.onerror = (event) => {
+          console.error("MediaRecorder error:", event);
+        };
+        
+        // Start recording
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error("Detailed recording error:", error);
+      }
+    }
+  };
+  
+  // Function to speak text
+  const speakText = (text: string, messageId: string) => {
+    if (!synthRef.current) return;
+    
+    // Cancel any ongoing speech
+    if (isSpeaking) {
+      synthRef.current.cancel();
+    }
+    
+    // Create a new utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    utteranceRef.current = utterance;
+    
+    // Set speaking properties
+    utterance.rate = 1.0; // Speed of speech (0.1 to 10)
+    utterance.pitch = 1.0; // Pitch of speech (0 to 2)
+    utterance.volume = 1.0; // Volume (0 to 1)
+    
+    // Handle events
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setCurrentSpeakingMessageId(messageId);
+      setTypingIndex(0); // Reset typing index
+    };
+    
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setCurrentSpeakingMessageId(null);
+    };
+    
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error:", event);
+      setIsSpeaking(false);
+      setCurrentSpeakingMessageId(null);
+    };
+    
+    // Start speaking
+    synthRef.current.speak(utterance);
+  };
+  
+  // Function to stop speaking
+  const stopSpeaking = () => {
+    if (synthRef.current && isSpeaking) {
+      synthRef.current.cancel();
+      setIsSpeaking(false);
+      setCurrentSpeakingMessageId(null);
+    }
+  };
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!inputMessage.trim() || isGenerating) return;
+    
+    // Stop recording if active
+    if (isRecording && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
     
     // Add user message
     const userMessage: Message = {
@@ -239,6 +475,11 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Speak the response
+      const plainTextResponse = aiResponse.replace(/<[^>]*>/g, ''); // Remove HTML tags
+      speakText(plainTextResponse, assistantMessage.id);
+      
     } catch (error) {
       console.error("Error generating AI response:", error);
       
@@ -384,15 +625,47 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
               <p className="text-xs text-muted-foreground">Your Personal AI Health Assistant</p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onClose} 
-            className="text-muted-foreground hover:bg-red-100 hover:text-red-500 transition-colors"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {isSpeaking ? (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={stopSpeaking}
+                className="text-primary border-primary/30 h-8 w-8"
+                aria-label="Stop speaking"
+                title="Stop speaking"
+              >
+                <VolumeX className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
+                  if (lastAssistantMessage) {
+                    const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
+                    speakText(plainTextResponse, lastAssistantMessage.id);
+                  }
+                }}
+                className="text-primary border-primary/30 h-8 w-8"
+                aria-label="Read last response"
+                title="Read last response"
+                disabled={!messages.some(msg => msg.role === 'assistant')}
+              >
+                <Volume2 className="h-4 w-4" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose} 
+              className="text-muted-foreground hover:bg-red-100 hover:text-red-500 transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
         
         {/* Patient Info Banner */}
@@ -451,7 +724,11 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                     {message.role === 'assistant' ? (
                       <div 
                         className="text-sm text-left"
-                        dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
+                        dangerouslySetInnerHTML={{ 
+                          __html: currentSpeakingMessageId === message.id && typingIndex > 0 
+                            ? formatMessageContent(message.content.substring(0, typingIndex)) 
+                            : formatMessageContent(message.content) 
+                        }}
                         data-formatted="true"
                       />
                     ) : (
@@ -512,8 +789,8 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
               ref={inputRef}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask your health question..."
-              className="flex-grow"
+              placeholder={isRecording ? "Recording..." : "Ask your health question..."}
+              className={`flex-grow ${isRecording ? 'border-primary' : ''}`}
               disabled={isGenerating}
               onKeyDown={(e) => {
                 // Trap focus within modal
@@ -526,6 +803,17 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                 }
               }}
             />
+            <Button
+              type="button"
+              size="icon"
+              onClick={toggleRecording}
+              className={`${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}
+              disabled={isGenerating}
+              aria-label={isRecording ? "Stop recording" : "Start voice input"}
+              title={isRecording ? "Stop recording" : "Start voice input"}
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
             <Button 
               type="submit" 
               size="icon" 
