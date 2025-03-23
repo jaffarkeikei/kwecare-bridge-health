@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { FileText, Pill, TestTube, Shield } from "lucide-react";
+import { FileText, Pill, TestTube, Shield, Activity } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,15 @@ import MedicationsList from "@/components/health-records/MedicationsList";
 import LabResultsList from "@/components/health-records/LabResultsList";
 import ImmunizationsList from "@/components/health-records/ImmunizationsList";
 import RecordsHeader from "@/components/health-records/RecordsHeader";
+import HealthAnalyticsReport from "@/components/dashboard/HealthAnalyticsReport";
 
 const HealthRecordsTab = () => {
   const [activeRecordTab, setActiveRecordTab] = useState("medications");
   const [searchQueries, setSearchQueries] = useState({
     medications: "",
     "lab-results": "",
-    immunizations: ""
+    immunizations: "",
+    "analytics": ""
   });
 
   const handleSearch = (tab: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +41,7 @@ const HealthRecordsTab = () => {
             onValueChange={setActiveRecordTab}
             className="w-full"
           >
-            <TabsList className="grid grid-cols-3 mb-4">
+            <TabsList className="grid grid-cols-4 mb-4">
               <TabsTrigger value="medications" className="flex items-center gap-2">
                 <Pill className="h-4 w-4" />
                 <span>Medications</span>
@@ -51,6 +53,10 @@ const HealthRecordsTab = () => {
               <TabsTrigger value="immunizations" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
                 <span>Immunizations</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                <span>Analytics</span>
               </TabsTrigger>
             </TabsList>
 
@@ -73,6 +79,10 @@ const HealthRecordsTab = () => {
                 searchQuery={searchQueries.immunizations} 
                 onSearch={handleSearch} 
               />
+            </TabsContent>
+            
+            <TabsContent value="analytics" className="mt-0">
+              <HealthAnalyticsReport />
             </TabsContent>
           </Tabs>
         </CardHeader>
