@@ -1,15 +1,17 @@
-
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, User, Stethoscope } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuthContext } from "@/App";
 
 const SignUpForm = () => {
   const navigate = useNavigate();
+  const { setIsAuthenticated, setUserType } = useContext(AuthContext);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,6 +20,7 @@ const SignUpForm = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [signupType, setSignupType] = useState<"patient" | "provider">("patient");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +45,45 @@ const SignUpForm = () => {
     // Simulating API request
     setTimeout(() => {
       setIsLoading(false);
-      toast.success("Account created successfully");
-      navigate("/dashboard");
+
+      // Store session data and user type
+      localStorage.setItem("kwecare_session", "active");
+      localStorage.setItem("kwecare_user_type", signupType);
+      
+      // Update auth context
+      setIsAuthenticated(true);
+      setUserType(signupType);
+      
+      toast.success(`${signupType === 'provider' ? 'Healthcare provider' : 'Patient'} account created successfully`);
+      
+      // Redirect based on user type
+      if (signupType === "provider") {
+        navigate("/provider-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     }, 1500);
   };
 
   return (
     <div className="animate-fade-in">
+      <Tabs 
+        value={signupType} 
+        onValueChange={(value) => setSignupType(value as "patient" | "provider")}
+        className="mb-6"
+      >
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="patient" className="flex items-center justify-center gap-2">
+            <User className="h-4 w-4" />
+            <span>Patient</span>
+          </TabsTrigger>
+          <TabsTrigger value="provider" className="flex items-center justify-center gap-2">
+            <Stethoscope className="h-4 w-4" />
+            <span>Healthcare Provider</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
@@ -76,6 +111,19 @@ const SignUpForm = () => {
               required
             />
           </div>
+          
+          {signupType === "provider" && (
+            <div className="space-y-2">
+              <Label htmlFor="credential">Medical License/Credential Number</Label>
+              <Input
+                id="credential"
+                type="text"
+                placeholder="License or credential ID"
+                className="input-field"
+                required
+              />
+            </div>
+          )}
           
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -167,7 +215,7 @@ const SignUpForm = () => {
               Creating account...
             </>
           ) : (
-            "Create account"
+            `Create ${signupType === 'provider' ? 'Healthcare Provider' : 'Patient'} Account`
           )}
         </Button>
       </form>
