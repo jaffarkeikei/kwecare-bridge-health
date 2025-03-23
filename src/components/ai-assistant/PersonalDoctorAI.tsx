@@ -584,6 +584,27 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     setShowLanguageSelector(false);
   };
   
+  // Function to clean text from markdown and HTML before speaking
+  const cleanTextForSpeech = (text: string): string => {
+    // Remove HTML tags
+    let cleanedText = text.replace(/<[^>]*>/g, '');
+    
+    // Remove markdown formatting
+    // Remove ** ** bold formatting
+    cleanedText = cleanedText.replace(/\*\*(.*?)\*\*/g, '$1');
+    
+    // Remove * for bullet points
+    cleanedText = cleanedText.replace(/^\s*\*\s+/gm, '• ');
+    
+    // Remove any remaining asterisks
+    cleanedText = cleanedText.replace(/\*/g, '');
+    
+    // Remove other markdown formatting
+    cleanedText = cleanedText.replace(/\_\_|\_{1,2}|\#{1,6}\s|\`{1,3}/g, '');
+    
+    return cleanedText;
+  };
+  
   // Function to speak text
   const speakText = async (text: string, messageId: string) => {
     try {
@@ -719,7 +740,8 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       // Auto-speak the response if not muted
       if (!isMuted) {
         const plainTextResponse = aiResponse.replace(/<[^>]*>/g, ''); // Remove HTML tags
-        speakText(plainTextResponse, assistantMessage.id);
+        const cleanedText = cleanTextForSpeech(plainTextResponse);
+        speakText(cleanedText, assistantMessage.id);
       }
       
     } catch (error) {
@@ -843,7 +865,8 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     if (assistantMessages.length > 0) {
       const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
       const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
-      speakText(plainTextResponse, lastAssistantMessage.id);
+      const cleanedText = cleanTextForSpeech(plainTextResponse);
+      speakText(cleanedText, lastAssistantMessage.id);
     }
   };
 

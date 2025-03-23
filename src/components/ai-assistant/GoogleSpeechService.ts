@@ -323,6 +323,19 @@ class GoogleSpeechService {
     // Remove HTML tags
     text = text.replace(/<[^>]*>/g, '');
     
+    // Remove markdown formatting characters
+    // Remove ** ** bold formatting
+    text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+    
+    // Remove * for bullet points (preserve the content)
+    text = text.replace(/^\s*\*\s+/gm, '• ');
+    
+    // Remove any remaining asterisks
+    text = text.replace(/\*/g, '');
+    
+    // Remove other markdown formatting if present
+    text = text.replace(/\_\_|\_{1,2}|\#{1,6}\s|\`{1,3}/g, '');
+    
     // Add pauses after punctuation
     text = text.replace(/([.!?])\s/g, '$1, ');
     

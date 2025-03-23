@@ -57,6 +57,48 @@ async function synthesizeSpeechFallback(text, outputFile) {
   return true;
 }
 
+// Function to preprocess text for speech synthesis
+function preprocessTextForSpeech(text) {
+  // Remove HTML tags
+  text = text.replace(/<[^>]*>/g, '');
+  
+  // Remove markdown formatting characters
+  // Remove ** ** bold formatting
+  text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+  
+  // Remove * for bullet points (preserve the content)
+  text = text.replace(/^\s*\*\s+/gm, '• ');
+  
+  // Remove any remaining asterisks
+  text = text.replace(/\*/g, '');
+  
+  // Remove other markdown formatting if present
+  text = text.replace(/\_\_|\_{1,2}|\#{1,6}\s|\`{1,3}/g, '');
+  
+  // Add pauses after punctuation for better speech flow
+  text = text.replace(/([.!?])\s/g, '$1, ');
+  
+  // Improve pronunciation of common medical terms
+  const medicalTerms = {
+    'mg': 'milligrams',
+    'mcg': 'micrograms', 
+    'mmHg': 'millimeters of mercury',
+    'BP': 'blood pressure',
+    'HR': 'heart rate',
+    'BG': 'blood glucose',
+    'T2DM': 'type 2 diabetes',
+    'HTN': 'hypertension'
+  };
+  
+  // Replace medical abbreviations with full terms
+  Object.entries(medicalTerms).forEach(([abbr, full]) => {
+    const regex = new RegExp(`\\b${abbr}\\b`, 'g');
+    text = text.replace(regex, full);
+  });
+  
+  return text;
+}
+
 // Endpoint for text-to-speech
 app.post('/api/tts', async (req, res) => {
   try {
@@ -65,6 +107,9 @@ app.post('/api/tts', async (req, res) => {
     if (!text) {
       return res.status(400).json({ error: 'Text is required' });
     }
+    
+    // Preprocess text for speech
+    const cleanedText = preprocessTextForSpeech(text);
     
     // Configure voice based on the selected type and language
     let voiceConfig;
@@ -146,7 +191,7 @@ app.post('/api/tts', async (req, res) => {
     
     // If API is already known to be disabled, use fallback immediately
     if (!apiEnabled) {
-      await synthesizeSpeechFallback(text, outputFile);
+      await synthesizeSpeechFallback(cleanedText, outputFile);
       const audioUrl = `/api/audio/${fileName}`;
       return res.json({ 
         audioUrl,
@@ -157,7 +202,7 @@ app.post('/api/tts', async (req, res) => {
     
     // Build the request
     const request = {
-      input: { text },
+      input: { text: cleanedText },
       voice: voiceConfig,
       audioConfig: {
         audioEncoding: 'MP3',
@@ -166,7 +211,7 @@ app.post('/api/tts', async (req, res) => {
       },
     };
     
-    console.log(`Sending TTS request for text in ${languageCode}: "${text.substring(0, 50)}..."`);
+    console.log(`Sending TTS request for text in ${languageCode}: "${cleanedText.substring(0, 50)}..."`);
     
     try {
       // Call Google Cloud TTS API
@@ -189,7 +234,7 @@ app.post('/api/tts', async (req, res) => {
         apiEnabled = false;
         
         // Use fallback synthesis
-        await synthesizeSpeechFallback(text, outputFile);
+        await synthesizeSpeechFallback(cleanedText, outputFile);
         const audioUrl = `/api/audio/${fileName}`;
         return res.json({ 
           audioUrl, 
