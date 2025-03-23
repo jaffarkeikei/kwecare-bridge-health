@@ -1252,6 +1252,10 @@ const ProviderDashboard = () => {
               
               
               <div className="mt-6 flex justify-center gap-3">
+                <Button onClick={handlePreviewReport} variant="outline" className="border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview Report
+                </Button>
                 <Button onClick={handleGenerateReport}>
                   <Download className="h-4 w-4 mr-2" />
                   Generate Detailed Report
@@ -1527,6 +1531,28 @@ const ProviderDashboard = () => {
       toast.dismiss();
       toast.success("Data exported successfully");
     }, 1000);
+  };
+
+  // Handle preview report
+  const handlePreviewReport = () => {
+    toast.loading("Preparing report preview...");
+    
+    // Generate the recommendations and steps for preview
+    const recommendations = generateAIRecommendations();
+    const nextSteps = generateNextSteps();
+    
+    // Set the report data
+    setReportData({
+      recommendations,
+      nextSteps,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Simulate loading and then show the preview
+    setTimeout(() => {
+      toast.dismiss();
+      setReportModalOpen(true);
+    }, 800);
   };
 
   // Modify the handleGenerateReport function to generate and download directly
