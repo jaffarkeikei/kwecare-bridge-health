@@ -18,17 +18,27 @@ graph TD
     HPD --> PM[Patient Management]
     HPD --> HAPPT[Provider Appointments]
     HPD --> PHR[Patient Health Records]
+    HPD --> TPLAN[Treatment Plans]
     
     AIDI --> TFL[TensorFlow.js Models]
     TFL --> SM[Symptom Model]
     TFL --> HPM[Health Prediction Model]
+    TFL --> IO[Image Object Detection]
     
     CS --> VC[Voice Commands]
     CS --> LT[Language Translation]
     CS --> TCM[Traditional Cultural Materials]
+    CS --> KR[Knowledge Repository]
     
     APPT --> SL[Starlink Integration]
     SL --> TMD[Telemedicine]
+    TMD --> LBVC[Low-Bandwidth Video Calls]
+    TMD --> SAF[Store-and-Forward]
+    
+    HR --> MR[Medical Records]
+    HR --> LAB[Lab Results]
+    HR --> MED[Medications]
+    HR --> TH[Treatment History]
 ```
 
 ## Component Architecture
@@ -100,16 +110,29 @@ sequenceDiagram
         App->>AIModels: Process with TensorFlow.js
         AIModels->>App: Return diagnostic suggestions
         App->>LocalStorage: Save diagnostic record
-        App->>User: Display results
+        App->>User: Display results and recommendations
+        
+        alt Online Mode
+            App->>RemoteAPI: Sync diagnostic record
+            RemoteAPI->>App: Confirm sync
+        end
     end
     
     alt Patient using Telemedicine
         User->>App: Request appointment
-        App->>RemoteAPI: Check provider availability
-        RemoteAPI->>App: Return available slots
-        User->>App: Select time slot
-        App->>RemoteAPI: Book appointment
-        RemoteAPI->>App: Confirm booking
+        
+        alt Online Mode
+            App->>RemoteAPI: Check provider availability
+            RemoteAPI->>App: Return available slots
+            User->>App: Select time slot
+            App->>RemoteAPI: Book appointment
+            RemoteAPI->>App: Confirm booking
+        else Offline Mode
+            App->>LocalStorage: Save appointment request
+            App->>User: Show pending confirmation
+            Note over App,RemoteAPI: Will sync when online
+        end
+        
         App->>LocalStorage: Save appointment locally
         App->>User: Show confirmation
     end
@@ -117,9 +140,13 @@ sequenceDiagram
     alt Provider accessing Patient Records
         User->>App: Search for patient
         App->>LocalStorage: Check cached data
-        App->>RemoteAPI: Fetch latest records
-        RemoteAPI->>App: Return patient data
-        App->>LocalStorage: Update cached records
+        
+        alt Online Mode
+            App->>RemoteAPI: Fetch latest records
+            RemoteAPI->>App: Return patient data
+            App->>LocalStorage: Update cached records
+        end
+        
         App->>User: Display patient information
     end
 ```
