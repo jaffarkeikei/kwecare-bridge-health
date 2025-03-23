@@ -533,112 +533,60 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   };
   
   // Function to speak text
-  const speakText = (text: string, messageId: string) => {
-    if (!synthRef.current) return;
-    
-    // Cancel any ongoing speech
-    if (isSpeaking) {
-      synthRef.current.cancel();
-    }
-    
-    // Create a new utterance
-    const utterance = new SpeechSynthesisUtterance(text);
-    utteranceRef.current = utterance;
-    
-    // Get available voices and select the best one
-    let voices = synthRef.current.getVoices();
-    
-    // For debugging
-    if (voices.length === 0) {
-      console.warn("No voices available yet - using default system voice");
-    } else {
-      console.log(`Found ${voices.length} voices`);
-    }
-    
-    // Try to find a voice based on the selected persona
-    let selectedVoice = null;
-    
-    if (voicePersona === "female") {
-      // Female voice preference
-      selectedVoice = voices.find(voice => 
-        (voice.name.toLowerCase().includes('samantha') || 
-         voice.name.toLowerCase().includes('female') ||
-         voice.name.toLowerCase().includes('lisa') ||
-         voice.name.toLowerCase().includes('karen') ||
-         voice.name.toLowerCase().includes('tessa')) &&
-        voice.lang.startsWith('en')
-      );
-    } else if (voicePersona === "male") {
-      // Male voice preference
-      selectedVoice = voices.find(voice => 
-        (voice.name.toLowerCase().includes('daniel') || 
-         voice.name.toLowerCase().includes('male') ||
-         voice.name.toLowerCase().includes('alex') ||
-         voice.name.toLowerCase().includes('tom')) && 
-        voice.lang.startsWith('en')
-      );
-    } else {
-      // Neutral or any good voice
-      selectedVoice = voices.find(voice => 
-        voice.name.toLowerCase().includes('premium') || 
-        voice.name.toLowerCase().includes('enhanced')
-      );
-    }
-    
-    // If still no voice found, use any English voice
-    if (!selectedVoice) {
-      selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
-    }
-    
-    // If we found a good voice, use it
-    if (selectedVoice) {
-      console.log("Selected voice:", selectedVoice.name);
-      utterance.voice = selectedVoice;
-    }
-    
-    // Adjust speech parameters based on persona
-    if (voicePersona === "female") {
-      utterance.rate = 0.92; // Slightly slower for clarity
-      utterance.pitch = 1.05; // Slightly higher pitch
-    } else if (voicePersona === "male") {
-      utterance.rate = 0.90; // Slower rate for male voices
-      utterance.pitch = 0.95; // Lower pitch
-    } else {
-      utterance.rate = 0.95; // Neutral rate
-      utterance.pitch = 1.0;  // Neutral pitch
-    }
-    
-    utterance.volume = 1.0; // Full volume for all
-    
-    // Handle events
-    utterance.onstart = () => {
+  const speakText = async (text: string, messageId: string) => {
+    try {
+      // Cancel any ongoing speech
+      if (isSpeaking) {
+        stopSpeaking();
+      }
+      
       setIsSpeaking(true);
       setCurrentSpeakingMessageId(messageId);
       setTypingIndex(0); // Reset typing index
-    };
-    
-    utterance.onend = () => {
+      
+      // Use Google TTS API instead of browser's speech synthesis
+      console.log("Using Google TTS API to speak");
+      
+      // Call the GoogleSpeechService to speak text
+      await googleSpeechService.speakText(text, voicePersona);
+      
+      // Set up a listener for when Google TTS finishes speaking
+      const checkSpeakingInterval = setInterval(() => {
+        if (!googleSpeechService.isCurrentlySpeaking()) {
+          clearInterval(checkSpeakingInterval);
+          setIsSpeaking(false);
+          setCurrentSpeakingMessageId(null);
+        }
+      }, 100);
+    } catch (error) {
+      console.error("Error with Google TTS:", error);
       setIsSpeaking(false);
       setCurrentSpeakingMessageId(null);
-    };
-    
-    utterance.onerror = (event) => {
-      console.error("Speech synthesis error:", event);
-      setIsSpeaking(false);
-      setCurrentSpeakingMessageId(null);
-    };
-    
-    // Start speaking
-    synthRef.current.speak(utterance);
+      
+      // Fall back to browser's speech synthesis if Google TTS fails
+      if (synthRef.current) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => {
+          setIsSpeaking(false);
+          setCurrentSpeakingMessageId(null);
+        };
+        synthRef.current.speak(utterance);
+      }
+    }
   };
   
   // Function to stop speaking
   const stopSpeaking = () => {
+    // Stop Google TTS
+    googleSpeechService.stopSpeaking();
+    
+    // Also stop browser speech synthesis as fallback
     if (synthRef.current && isSpeaking) {
       synthRef.current.cancel();
-      setIsSpeaking(false);
-      setCurrentSpeakingMessageId(null);
     }
+    
+    setIsSpeaking(false);
+    setCurrentSpeakingMessageId(null);
   };
   
   // Handle form submission
@@ -826,6 +774,22 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     }, 100);
   };
 
+  // Add a new function to handle user-initiated speech (required by browsers)
+  const handleVoiceButtonClick = () => {
+    const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
+    if (lastAssistantMessage) {
+      // First ensure the speech synthesis is initialized by speaking a silent message
+      // This is a workaround for browsers that require user interaction before speech
+      const silence = new SpeechSynthesisUtterance('');
+      silence.volume = 0;
+      window.speechSynthesis.speak(silence);
+      
+      // Then speak the actual message
+      const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
+      speakText(plainTextResponse, lastAssistantMessage.id);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -853,7 +817,13 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                   <span>Gemini AI</span>
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">Your Personal AI Health Assistant</p>
+              <div className="flex items-center gap-1">
+                <p className="text-xs text-muted-foreground">Personal Health Assistant</p>
+                <Badge variant="outline" className="ml-1 bg-primary/5 text-[10px] py-0 px-1 font-semibold">
+                  <Volume2 className="h-2 w-2 mr-0.5" />
+                  Chirp HD
+                </Badge>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -874,13 +844,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => {
-                      const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
-                      if (lastAssistantMessage) {
-                        const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
-                        speakText(plainTextResponse, lastAssistantMessage.id);
-                      }
-                    }}
+                    onClick={handleVoiceButtonClick}
                     className="text-primary border-primary/30 h-8 w-8"
                     aria-label="Read last response"
                     title="Read with current voice"
@@ -890,32 +854,59 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                   </Button>
                   
                   {/* Voice selector dropdown that appears on hover */}
-                  <div className="absolute right-0 mt-1 w-36 bg-card rounded-md shadow-lg border border-border hidden group-hover:block z-50">
-                    <div className="p-1 text-xs font-medium text-muted-foreground">Voice Type</div>
+                  <div className="absolute right-0 mt-1 w-48 bg-card rounded-md shadow-lg border border-border hidden group-hover:block z-50">
+                    <div className="p-1 text-xs font-medium text-muted-foreground flex items-center">
+                      <SparklesIcon className="h-3 w-3 mr-1 text-primary" />
+                      <span>Google Chirp HD Voice</span>
+                    </div>
                     <div className="px-1 pb-1">
                       <Button
                         variant={voicePersona === "female" ? "default" : "ghost"}
                         size="sm"
                         className="w-full justify-start text-xs"
-                        onClick={() => setVoicePersona("female")}
+                        onClick={() => {
+                          setVoicePersona("female");
+                          // Immediately try the voice
+                          setTimeout(() => {
+                            const silence = new SpeechSynthesisUtterance('');
+                            silence.volume = 0;
+                            window.speechSynthesis.speak(silence);
+                          }, 100);
+                        }}
                       >
-                        Female
+                        Female (Chirp HD)
                       </Button>
                       <Button
                         variant={voicePersona === "male" ? "default" : "ghost"}
                         size="sm"
                         className="w-full justify-start text-xs"
-                        onClick={() => setVoicePersona("male")}
+                        onClick={() => {
+                          setVoicePersona("male");
+                          // Immediately try the voice
+                          setTimeout(() => {
+                            const silence = new SpeechSynthesisUtterance('');
+                            silence.volume = 0;
+                            window.speechSynthesis.speak(silence);
+                          }, 100);
+                        }}
                       >
-                        Male
+                        Male (Chirp HD)
                       </Button>
                       <Button
                         variant={voicePersona === "neutral" ? "default" : "ghost"}
                         size="sm"
                         className="w-full justify-start text-xs"
-                        onClick={() => setVoicePersona("neutral")}
+                        onClick={() => {
+                          setVoicePersona("neutral");
+                          // Immediately try the voice
+                          setTimeout(() => {
+                            const silence = new SpeechSynthesisUtterance('');
+                            silence.volume = 0;
+                            window.speechSynthesis.speak(silence);
+                          }, 100);
+                        }}
                       >
-                        Neutral
+                        Neutral (Chirp HD)
                       </Button>
                     </div>
                   </div>
