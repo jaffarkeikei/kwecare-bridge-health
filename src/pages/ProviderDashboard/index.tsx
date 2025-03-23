@@ -26,11 +26,11 @@ import Footer from "@/components/ui/layout/Footer";
 
 // Import tab components
 import DashboardOverview from "./components/DashboardOverview";
-import PatientManagement from "./components/PatientManagement";
-import AppointmentSection from "./components/AppointmentSection";
-import RecordsManagement from "./components/RecordsManagement";
-import AnalyticsSection from "./components/AnalyticsSection";
-import MessagesSection from "./components/MessagesSection";
+// import PatientManagement from "./components/PatientManagement";
+// import AppointmentSection from "./components/AppointmentSection";
+// import RecordsManagement from "./components/RecordsManagement";
+// import AnalyticsSection from "./components/AnalyticsSection";
+// import MessagesSection from "./components/MessagesSection";
 
 // Types
 export type ProviderTab = "dashboard" | "patients" | "appointments" | "records" | "analytics" | "messages";
@@ -136,11 +136,11 @@ const ProviderDashboard = () => {
 
           {/* Render active tab content */}
           {activeTab === "dashboard" && <DashboardOverview />}
-          {activeTab === "patients" && <PatientManagement />}
+          {/* {activeTab === "patients" && <PatientManagement />}
           {activeTab === "appointments" && <AppointmentSection />}
           {activeTab === "records" && <RecordsManagement />}
           {activeTab === "analytics" && <AnalyticsSection />}
-          {activeTab === "messages" && <MessagesSection />}
+          {activeTab === "messages" && <MessagesSection />} */}
         </main>
 
         <Footer />

@@ -69,7 +69,10 @@ const AppointmentSection = () => {
       </CardHeader>
       <CardContent>
         <CalendarScheduler 
-          appointments={providerAppointments}
+          appointments={providerAppointments.map(appointment => ({
+            ...appointment,
+            date: appointment.date instanceof Date ? appointment.date : new Date(appointment.date)
+          }))}
           patients={patients}
           onScheduleAppointment={() => setScheduleModalOpen(true)}
           onAppointmentSelected={handleAppointmentSelected}
