@@ -60,35 +60,79 @@ async function synthesizeSpeechFallback(text, outputFile) {
 // Endpoint for text-to-speech
 app.post('/api/tts', async (req, res) => {
   try {
-    const { text, voiceType } = req.body;
+    const { text, voiceType, language = 'en' } = req.body;
     
     if (!text) {
       return res.status(400).json({ error: 'Text is required' });
     }
     
-    // Configure voice based on the selected type
+    // Configure voice based on the selected type and language
     let voiceConfig;
-    switch(voiceType) {
-      case 'female':
-        voiceConfig = {
-          languageCode: 'en-US',
-          name: 'en-US-Neural2-F', // Neural Chirp HD female voice
-          ssmlGender: 'FEMALE'
-        };
-        break;
-      case 'male':
-        voiceConfig = {
-          languageCode: 'en-US',
-          name: 'en-US-Neural2-D', // Neural Chirp HD male voice
-          ssmlGender: 'MALE'
-        };
-        break;
-      default:
-        voiceConfig = {
-          languageCode: 'en-US',
-          name: 'en-US-Neural2-A', // Neural Chirp HD neutral voice
-          ssmlGender: 'NEUTRAL'
-        };
+    
+    // Language code mapping to handle Google's specific voice codes
+    const languageMapping = {
+      'en': 'en-US',
+      'fr': 'fr-FR',
+      'es': 'es-ES',
+      'de': 'de-DE',
+      'zh': 'cmn-CN', // Mandarin Chinese
+      'ja': 'ja-JP',
+      'ar': 'ar-XA',
+      'hi': 'hi-IN',
+      'ru': 'ru-RU'
+    };
+    
+    // Get the mapped language code or default to en-US
+    const languageCode = languageMapping[language] || 'en-US';
+    console.log(`Using language code: ${languageCode} for language: ${language}`);
+    
+    // Voice selection based on language and gender preference
+    if (languageCode === 'en-US') {
+      // English has multiple Neural2 voices
+      switch(voiceType) {
+        case 'female':
+          voiceConfig = {
+            languageCode: 'en-US',
+            name: 'en-US-Neural2-F', // Neural HD female voice
+            ssmlGender: 'FEMALE'
+          };
+          break;
+        case 'male':
+          voiceConfig = {
+            languageCode: 'en-US',
+            name: 'en-US-Neural2-D', // Neural HD male voice
+            ssmlGender: 'MALE'
+          };
+          break;
+        default:
+          voiceConfig = {
+            languageCode: 'en-US',
+            name: 'en-US-Neural2-A', // Neural HD neutral voice
+            ssmlGender: 'NEUTRAL'
+          };
+      }
+    } else {
+      // For other languages, use the best available voice
+      // Since we can't know all voice names across languages, use gender only
+      switch(voiceType) {
+        case 'female':
+          voiceConfig = {
+            languageCode: languageCode,
+            ssmlGender: 'FEMALE'
+          };
+          break;
+        case 'male':
+          voiceConfig = {
+            languageCode: languageCode,
+            ssmlGender: 'MALE'
+          };
+          break;
+        default:
+          voiceConfig = {
+            languageCode: languageCode,
+            ssmlGender: 'NEUTRAL'
+          };
+      }
     }
     
     // Create the file and directory regardless
@@ -122,7 +166,7 @@ app.post('/api/tts', async (req, res) => {
       },
     };
     
-    console.log(`Sending TTS request for text: "${text.substring(0, 50)}..."`);
+    console.log(`Sending TTS request for text in ${languageCode}: "${text.substring(0, 50)}..."`);
     
     try {
       // Call Google Cloud TTS API

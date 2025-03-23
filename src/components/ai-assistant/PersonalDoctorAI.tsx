@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { Bot, User, Send, X, Loader2, Brain, History, Activity, FileHeart, Sparkles, Mic, Volume2, VolumeX, Headphones, Settings } from "lucide-react";
+import { Bot, User, Send, X, Loader2, Brain, History, Activity, FileHeart, Sparkles, Mic, Volume2, VolumeX, Headphones, Settings, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -104,6 +104,19 @@ interface PersonalDoctorAIProps {
   onClose: () => void;
 }
 
+// Add supported languages
+const supportedLanguages = [
+  { code: 'en', name: 'English' },
+  { code: 'fr', name: 'French' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'de', name: 'German' },
+  { code: 'zh', name: 'Chinese' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'ru', name: 'Russian' }
+];
+
 // Helper function to format message content with better styling
 const formatMessageContent = (content: string) => {
   if (!content) return '';
@@ -178,9 +191,11 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
   const [currentSpeakingMessageId, setCurrentSpeakingMessageId] = useState<string | null>(null);
-  const [voicePersona, setVoicePersona] = useState<string>("female"); // Options: female, male, neutral
+  const [voicePersona, setVoicePersona] = useState<string>("female");
   const [isMuted, setIsMuted] = useState(false);
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState({ code: 'en', name: 'English' });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -554,6 +569,21 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     setShowVoiceSelector(!showVoiceSelector);
   };
   
+  // Function to toggle language selector
+  const toggleLanguageSelector = () => {
+    setShowLanguageSelector(!showLanguageSelector);
+    // Close the voice selector if it's open
+    if (showVoiceSelector) {
+      setShowVoiceSelector(false);
+    }
+  };
+  
+  // Function to select language
+  const selectLanguage = (languageCode: string, languageName: string) => {
+    setSelectedLanguage({ code: languageCode, name: languageName });
+    setShowLanguageSelector(false);
+  };
+  
   // Function to speak text
   const speakText = async (text: string, messageId: string) => {
     try {
@@ -571,11 +601,11 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       setCurrentSpeakingMessageId(messageId);
       setTypingIndex(0); // Reset typing index
       
-      // Use Google TTS API instead of browser's speech synthesis
-      console.log("Using Google TTS API to speak");
+      // Use Google TTS API with selected language
+      console.log(`Using Google TTS API to speak in ${selectedLanguage.name}`);
       
-      // Call the GoogleSpeechService to speak text
-      await googleSpeechService.speakText(text, voicePersona);
+      // Call the GoogleSpeechService to speak text with language
+      await googleSpeechService.speakText(text, voicePersona, selectedLanguage.code);
       
       // Set up a listener for when Google TTS finishes speaking
       const checkSpeakingInterval = setInterval(() => {
@@ -593,6 +623,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       // Fall back to browser's speech synthesis if Google TTS fails
       if (synthRef.current) {
         const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = selectedLanguage.code;
         utterance.onend = () => {
           setIsSpeaking(false);
           setCurrentSpeakingMessageId(null);
@@ -666,11 +697,14 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
         content: userMessage.content
       });
       
-      // Get response from Gemini API
+      // Get response from Gemini API with language preference
       const aiResponse = await geminiApiService.generateResponse(
         formattedMessages,
         mockPatientData,
-        { temperature: 0.7 }
+        { 
+          temperature: 0.7,
+          language: selectedLanguage.code
+        }
       );
       
       const assistantMessage: Message = {
@@ -846,6 +880,10 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                   <Volume2 className="h-2 w-2 mr-0.5" />
                   {googleSpeechService.isApiEnabled() ? "Google Neural2" : "Browser TTS"}
                 </Badge>
+                <Badge variant="outline" className="ml-1 bg-primary/5 text-[10px] py-0 px-1 font-semibold">
+                  <Globe className="h-2 w-2 mr-0.5" />
+                  {selectedLanguage.name}
+                </Badge>
               </div>
             </div>
           </div>
@@ -893,6 +931,43 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                     >
                       Male Voice
                     </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Language Selection Button */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleLanguageSelector}
+                className="text-primary border-primary/30 h-8 w-8"
+                aria-label="Select language"
+                title="Select language"
+              >
+                <Globe className="h-4 w-4" />
+              </Button>
+              
+              {/* Language selector dropdown */}
+              {showLanguageSelector && (
+                <div className="absolute right-0 mt-1 w-48 bg-card rounded-md shadow-lg border border-border z-50">
+                  <div className="p-1 text-xs font-medium text-muted-foreground flex items-center">
+                    <Globe className="h-3 w-3 mr-1 text-primary" />
+                    <span>Language Selection</span>
+                  </div>
+                  <div className="px-1 pb-1 max-h-60 overflow-y-auto">
+                    {supportedLanguages.map((language) => (
+                      <Button
+                        key={language.code}
+                        variant={selectedLanguage.code === language.code ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start text-xs mb-1"
+                        onClick={() => selectLanguage(language.code, language.name)}
+                      >
+                        {language.name}
+                      </Button>
+                    ))}
                   </div>
                 </div>
               )}

@@ -29,6 +29,7 @@ interface GeminiRequestOptions {
   temperature?: number;
   maxTokens?: number;
   safetySettings?: any[];
+  language?: string;
 }
 
 class GeminiApiService {
@@ -82,12 +83,12 @@ class GeminiApiService {
     // If no API key is provided, use mock responses
     if (!this.apiKey) {
       console.warn('No Gemini API key provided. Using mock responses.');
-      return this.getMockResponse(messages[messages.length - 1].content, patientData);
+      return this.getMockResponse(messages[messages.length - 1].content, patientData, options.language);
     }
 
     try {
-      // Create context with patient data
-      const contextPrompt = this.buildContextualPrompt(patientData);
+      // Create context with patient data and language preference
+      const contextPrompt = this.buildContextualPrompt(patientData, options.language);
       
       // Prepare the conversation history
       let conversationText = contextPrompt + "\n\n";
@@ -153,15 +154,20 @@ class GeminiApiService {
       console.error('Error calling Gemini API:', error);
       
       // Fall back to mock response
-      const mockResponse = this.getMockResponse(messages[messages.length - 1].content, patientData);
+      const mockResponse = this.getMockResponse(messages[messages.length - 1].content, patientData, options.language);
       return this.enhanceResponseFormatting(mockResponse);
     }
   }
 
   /**
-   * Build a contextual prompt that includes patient information
+   * Build a contextual prompt that includes patient information and language preference
    */
-  private buildContextualPrompt(patientData: PatientData): string {
+  private buildContextualPrompt(patientData: PatientData, language?: string): string {
+    // Add language instruction if a specific language is requested
+    const languageInstruction = language && language !== 'en' 
+      ? `\nIMPORTANT: Please respond in ${this.getLanguageName(language)} language.` 
+      : '';
+    
     // Create a system prompt that includes patient data for context
     return `
 You are Dr. AIDA, an advanced AI health assistant for ${patientData.name}, a ${patientData.age}-year-old ${patientData.gender}.
@@ -181,8 +187,26 @@ Instructions:
    - Use **Section Titles:** for headers (with the colon)
    - Use * bullet points for lists
    - Add blank lines between paragraphs
-   - Keep lists consistently formatted for readability
+   - Keep lists consistently formatted for readability${languageInstruction}
 `;
+  }
+
+  /**
+   * Get language name from language code
+   */
+  private getLanguageName(code: string): string {
+    const languages: Record<string, string> = {
+      'en': 'English',
+      'fr': 'French',
+      'es': 'Spanish',
+      'de': 'German',
+      'zh': 'Chinese',
+      'ja': 'Japanese',
+      'ar': 'Arabic',
+      'hi': 'Hindi',
+      'ru': 'Russian'
+    };
+    return languages[code] || code;
   }
 
   /**
@@ -219,28 +243,35 @@ Instructions:
   /**
    * Mock response generator for fallback when API fails
    */
-  private getMockResponse(userInput: string, patientData: PatientData): string {
+  private getMockResponse(userInput: string, patientData: PatientData, language?: string): string {
     const input = userInput.toLowerCase();
     
     // Examples of contextual responses based on the patient's data and input
+    let response = '';
+    
     if (input.includes("diabetes") || input.includes("blood sugar")) {
-      return `Based on your records, your last blood sugar reading was ${patientData.recentVitals.bloodSugar}. This is slightly elevated from the recommended range for someone with Type 2 Diabetes. Have you been following your medication schedule with Metformin ${patientData.medications[0].dosage} ${patientData.medications[0].frequency}? I can suggest some dietary adjustments that might help bring this under better control.`;
+      response = `Based on your records, your last blood sugar reading was ${patientData.recentVitals.bloodSugar}. This is slightly elevated from the recommended range for someone with Type 2 Diabetes. Have you been following your medication schedule with Metformin ${patientData.medications[0].dosage} ${patientData.medications[0].frequency}? I can suggest some dietary adjustments that might help bring this under better control.`;
     } 
-    
-    if (input.includes("blood pressure") || input.includes("hypertension")) {
-      return `Your most recent blood pressure reading was ${patientData.recentVitals.bloodPressure}, which is better than your previous readings but still slightly above the target range. The Lisinopril appears to be helping, but we might want to discuss some lifestyle modifications during your upcoming appointment.`;
+    else if (input.includes("blood pressure") || input.includes("hypertension")) {
+      response = `Your most recent blood pressure reading was ${patientData.recentVitals.bloodPressure}, which is better than your previous readings but still slightly above the target range. The Lisinopril appears to be helping, but we might want to discuss some lifestyle modifications during your upcoming appointment.`;
+    }
+    else if (input.includes("appointment") || input.includes("visit")) {
+      response = `Based on your records, your next follow-up appointment should be scheduled soon. Your last visit was where we discussed managing your diabetes and hypertension. Is there anything specific you'd like to prepare for your next appointment?`;
+    }
+    else if (input.includes("medication") || input.includes("medicine")) {
+      response = `You're currently taking ${patientData.medications.length} medications: ${patientData.medications.map(med => `${med.name} ${med.dosage} ${med.frequency}`).join(" and ")}. It's important to take these regularly as prescribed. Have you been experiencing any side effects I should know about?`;
+    }
+    else {
+      // General response for other queries
+      response = `Thank you for your question. As your personal health assistant, I'll do my best to help. Based on your health profile, you have a history of ${patientData.conditions.join(" and ")}. Your recent vitals look stable overall. How have you been feeling lately in relation to your question?`;
     }
     
-    if (input.includes("appointment") || input.includes("visit")) {
-      return `Based on your records, your next follow-up appointment should be scheduled soon. Your last visit was where we discussed managing your diabetes and hypertension. Is there anything specific you'd like to prepare for your next appointment?`;
+    // If a different language is requested, add note about translation
+    if (language && language !== 'en') {
+      response += `\n\n[Note: This is a mock response. In production, this would be provided in ${this.getLanguageName(language)}.]`;
     }
     
-    if (input.includes("medication") || input.includes("medicine")) {
-      return `You're currently taking ${patientData.medications.length} medications: ${patientData.medications.map(med => `${med.name} ${med.dosage} ${med.frequency}`).join(" and ")}. It's important to take these regularly as prescribed. Have you been experiencing any side effects I should know about?`;
-    }
-    
-    // General response for other queries
-    return `Thank you for your question. As your personal health assistant, I'll do my best to help. Based on your health profile, you have a history of ${patientData.conditions.join(" and ")}. Your recent vitals look stable overall. How have you been feeling lately in relation to your question?`;
+    return response;
   }
 }
 

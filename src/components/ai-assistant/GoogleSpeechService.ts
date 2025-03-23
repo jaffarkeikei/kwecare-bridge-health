@@ -98,7 +98,7 @@ class GoogleSpeechService {
   }
 
   // Method to speak text using Google Cloud TTS API
-  async speakText(text: string, voiceType: string = 'female'): Promise<void> {
+  async speakText(text: string, voiceType: string = 'female', language: string = 'en'): Promise<void> {
     try {
       // Stop any ongoing speech
       this.stopSpeaking();
@@ -106,11 +106,11 @@ class GoogleSpeechService {
       // If fallback only is set, skip Google TTS entirely
       if (this.useFallbackOnly) {
         console.log("Using browser speech synthesis (fallback mode enabled)");
-        this.fallbackToLocalSpeech(text, voiceType);
+        this.fallbackToLocalSpeech(text, voiceType, language);
         return;
       }
       
-      console.log("Using Google Cloud Text-to-Speech API");
+      console.log(`Using Google Cloud Text-to-Speech API in language: ${language}`);
       
       // First check if the server is accessible
       try {
@@ -131,7 +131,7 @@ class GoogleSpeechService {
       } catch (serverError) {
         console.error("Error connecting to TTS server:", serverError);
         // Fall back to browser's speech synthesis
-        this.fallbackToLocalSpeech(text, voiceType);
+        this.fallbackToLocalSpeech(text, voiceType, language);
         return;
       }
       
@@ -149,7 +149,8 @@ class GoogleSpeechService {
         },
         body: JSON.stringify({
           text: cleanText,
-          voiceType: voiceType
+          voiceType: voiceType,
+          language: language
         }),
         mode: 'cors' // Explicitly request CORS mode
       });
@@ -178,7 +179,7 @@ class GoogleSpeechService {
         console.log("Server responded with fallback mode. Using browser speech.");
         this.useFallbackOnly = true;
         this.apiEnabled = false;
-        this.fallbackToLocalSpeech(text, voiceType);
+        this.fallbackToLocalSpeech(text, voiceType, language);
         return;
       }
       
@@ -200,7 +201,7 @@ class GoogleSpeechService {
         this.isSpeaking = false;
         this.speakingAudio = null;
         // Fall back to browser's speech synthesis in case of audio loading error
-        this.fallbackToLocalSpeech(text, voiceType);
+        this.fallbackToLocalSpeech(text, voiceType, language);
       };
       
       // Play the audio
@@ -213,7 +214,7 @@ class GoogleSpeechService {
       
       // Fall back to browser's speech synthesis
       console.log("Falling back to browser speech synthesis");
-      this.fallbackToLocalSpeech(text, voiceType);
+      this.fallbackToLocalSpeech(text, voiceType, language);
     }
   }
   
@@ -229,24 +230,50 @@ class GoogleSpeechService {
   }
   
   // Fallback method using browser's speech synthesis
-  private fallbackToLocalSpeech(text: string, voiceType: string): void {
+  private fallbackToLocalSpeech(text: string, voiceType: string, language: string = 'en'): void {
     try {
       const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Set the language
+      utterance.lang = language;
       
       // Get available voices
       const voices = window.speechSynthesis.getVoices();
       
-      // Try to find a good voice
+      // Try to find a good voice for the selected language
       let selectedVoice = null;
+      
+      // First try to find a voice that matches both gender preference and language
       if (voiceType === 'female') {
         selectedVoice = voices.find(v => 
-          v.name.includes('Female') && v.lang.startsWith('en')
+          v.name.includes('Female') && v.lang.startsWith(language)
         );
       } else if (voiceType === 'male') {
         selectedVoice = voices.find(v => 
-          v.name.includes('Male') && v.lang.startsWith('en')
+          v.name.includes('Male') && v.lang.startsWith(language)
         );
-      } else {
+      }
+      
+      // If no matching gender+language voice found, try just language match
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.lang.startsWith(language));
+      }
+      
+      // If still no match, fall back to any gender preference in English
+      if (!selectedVoice) {
+        if (voiceType === 'female') {
+          selectedVoice = voices.find(v => 
+            v.name.includes('Female') && v.lang.startsWith('en')
+          );
+        } else if (voiceType === 'male') {
+          selectedVoice = voices.find(v => 
+            v.name.includes('Male') && v.lang.startsWith('en')
+          );
+        }
+      }
+      
+      // Last resort - any English voice
+      if (!selectedVoice) {
         selectedVoice = voices.find(v => v.lang.startsWith('en'));
       }
       
