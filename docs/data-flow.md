@@ -177,6 +177,41 @@ sequenceDiagram
     KnowledgeKeeper->>Community: Consult on changes
 ```
 
+### 6. Text-to-Speech Accessibility Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ClientApp
+    participant TTSServer
+    participant GoogleTTS
+    
+    User->>ClientApp: Request speech synthesis
+    
+    alt Online Mode
+        ClientApp->>TTSServer: Send text and voice preferences
+        TTSServer->>GoogleTTS: Forward to Google Cloud TTS
+        GoogleTTS->>TTSServer: Return audio content
+        TTSServer->>ClientApp: Provide audio URL
+        ClientApp->>User: Play synthesized speech
+    else API Unavailable
+        ClientApp->>TTSServer: Send text and voice preferences
+        TTSServer->>ClientApp: Return fallback notice
+        ClientApp->>User: Use browser speech synthesis
+    else Offline Mode
+        ClientApp->>ClientApp: Use cached audio or browser TTS
+        ClientApp->>User: Play available audio
+    end
+    
+    Note over User,GoogleTTS: Voice Selection
+    User->>ClientApp: Change voice preference
+    ClientApp->>TTSServer: Request with new voice type
+    TTSServer->>GoogleTTS: Forward with voice parameters
+    GoogleTTS->>TTSServer: Return new voice audio
+    TTSServer->>ClientApp: Provide updated audio
+    ClientApp->>User: Play with selected voice
+```
+
 ## Data Storage Architecture
 
 KweCare implements a tiered storage architecture to ensure data availability while respecting sovereignty:

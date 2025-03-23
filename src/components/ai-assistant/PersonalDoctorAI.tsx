@@ -106,32 +106,56 @@ interface PersonalDoctorAIProps {
 
 // Helper function to format message content with better styling
 const formatMessageContent = (content: string) => {
-  // Handle empty content
   if (!content) return '';
   
-  // Remove any bullet points at the beginning of the message
-  content = content.replace(/^[•\*]\s*/, '');
+  // Trim content to remove any leading/trailing whitespace
+  content = content.trim();
   
-  // Replace AI: prefix if present - remove completely (handle more variations)
-  content = content.replace(/^(?:1\. )?(?:AI|AI:)\s*:?\s*/i, '');
+  // Remove any leading tab or spaces from each line
+  content = content.replace(/^[ \t]+/gm, '');
   
-  // Replace newlines with breaks for better readability
-  content = content.replace(/\n/g, '<br />');
+  // Format section headers (e.g., **Breakfast:**)
+  content = content.replace(/\*\*(.*?):\*\*/g, '<h3 class="font-semibold text-primary my-2 text-left">$1:</h3>');
   
   // Format bullet points with proper spacing and styling
-  content = content.replace(/[•\*]\s*(.*?)(?=<br \/>|$)/g, (match, innerText) => {
-    return `<li class="ml-5 pl-1 text-left">${innerText}</li>`;
-  });
+  content = content.replace(/\* (.*?)(?=\n|$)/g, '<li class="ml-5 pl-1 text-left">$1</li>');
   
   // Wrap bullet point lists in ul tags
-  if (content.includes('<li class="ml-5 pl-1 text-left">')) {
-    content = content.replace(
-      /(<li class="ml-5 pl-1 text-left">.*?<\/li>(?:<br \/>)?)+/g,
-      match => `<ul class="list-disc my-2">${match.replace(/<br \/>/g, '')}</ul>`
-    );
+  content = content.replace(/<li.*?>(.*?)<\/li>(\s*<li.*?>.*?<\/li>)*/gs, '<ul class="my-2 text-left">$&</ul>');
+  
+  // Add special styling for meal plan sections
+  content = content.replace(/<h3.*?>(Breakfast|Lunch|Dinner|Snacks):(.*?)<\/h3>/g, 
+    '<div class="meal-plan-section text-left"><h3 class="font-semibold text-primary my-1 text-left">$1:$2</h3>');
+  
+  // Close the meal plan sections
+  content = content.replace(/<h3.*?>((?!Breakfast|Lunch|Dinner|Snacks).+?):(.*?)<\/h3>/g, 
+    '</div><h3 class="font-semibold text-primary my-1 text-left">$1:$2</h3>');
+    
+  // Fix any unclosed meal plan sections at the end
+  if (content.includes('<div class="meal-plan-section') && 
+      !content.endsWith('</div>')) {
+    content += '</div>';
   }
   
-  return content;
+  // Format nutritional information with badges
+  content = content.replace(/\((\d+\s*(calories|kcal|g protein|g carbs|g fat))\)/gi, 
+    '<span class="nutrient-info text-left">$1</span>');
+  
+  // Format paragraphs
+  const paragraphs = content.split('\n\n').filter(p => p.trim());
+  if (paragraphs.length > 1) {
+    return '<div class="ai-message-content text-content-left">' + 
+           paragraphs.map(p => {
+             // Don't double-wrap elements already wrapped in tags
+             if (p.trim().startsWith('<') && p.trim().endsWith('>')) {
+               return p;
+             }
+             return `<p class="mb-3 text-left">${p.trim()}</p>`;
+           }).join('') + 
+           '</div>';
+  }
+  
+  return '<div class="ai-message-content text-content-left">' + content + '</div>';
 };
 
 // Add this to the type declarations
@@ -288,104 +312,160 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
 
   // Function to toggle recording
   const toggleRecording = async () => {
-    // If already recording, stop recording
     if (isRecording) {
+      // If we're already recording, stop it
       console.log("Stopping recording");
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-          console.log("Speech recognition stopped successfully");
-        } catch (e) {
-          console.error("Error stopping speech recognition:", e);
-        }
-      } else if (mediaRecorderRef.current) {
+      
+      // Stop MediaRecorder if active
+      if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
-        console.log("Media recorder stopped");
       }
+      
+      // Stop Web Speech API if active
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      
       setIsRecording(false);
-      return;
-    }
-    
-    // Check if we should use Web Speech API first
-    const useBrowserSpeechRecognition = 
-      ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
-    
-    console.log("Speech recognition available:", useBrowserSpeechRecognition);
-    
-    if (useBrowserSpeechRecognition) {
-      console.log("Using Web Speech API for speech recognition");
-      useWebSpeechRecognition();
-      return;
-    }
-    
-    // Fall back to MediaRecorder + Google Cloud if Web Speech API isn't available
-    try {
-      console.log("Web Speech API not available, using MediaRecorder fallback");
-      
-      // Check browser support for MediaRecorder
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Media recording not supported in this browser");
-      }
-      
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
-      });
-      
-      console.log("Microphone access granted");
-      
-      // Create media recorder with supported options
-      let options;
-      if (MediaRecorder.isTypeSupported('audio/webm')) {
-        options = {mimeType: 'audio/webm'};
-      } else {
-        options = {};
-      }
-      
-      const mediaRecorder = new MediaRecorder(stream, options);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      
-      // Set up event handlers
-      mediaRecorder.ondataavailable = (e) => {
-        console.log("Data available event, data size:", e.data.size);
-        if (e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
+    } else {
+      try {
+        console.log("Starting recording...");
+        
+        // Try using Web Speech API first if available (more reliable in browsers)
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+          console.log("Using Web Speech API (browser native)");
+          return useWebSpeechRecognition();
         }
-      };
-      
-      // Rest of the MediaRecorder code...
-      // Start recording with a time slice to get data frequently
-      mediaRecorder.start(1000); // Get data every second
-      setInputMessage("Recording... (speak now)");
-      setIsRecording(true);
-      console.log("MediaRecorder started with mimeType:", mediaRecorder.mimeType);
-      
-    } catch (error) {
-      console.error("Recording initialization error:", error);
-      setIsRecording(false);
-      alert("Couldn't access your microphone. Please check permissions and try again.");
+        
+        // Fall back to MediaRecorder + Google Cloud if Web Speech API isn't available
+        console.log("Using MediaRecorder + Google Speech API");
+        
+        // Check browser support for MediaRecorder
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          console.error("Media recording not supported in this browser");
+          alert("Voice recording is not supported in your browser. Try Chrome or Edge.");
+          return;
+        }
+
+        // Verify Google Speech API is initialized
+        if (!googleSpeechService.isApiInitialized()) {
+          console.warn("Google Speech API not initialized. Using mock service.");
+          const keyFilePath = import.meta.env.VITE_GOOGLE_SPEECH_KEY_PATH || '';
+          if (keyFilePath) {
+            googleSpeechService.initialize(keyFilePath);
+          } else {
+            console.warn('Missing Google Speech API key path. Will use mock responses.');
+          }
+        }
+        
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          } 
+        });
+        
+        console.log("Microphone access granted");
+        
+        // Create media recorder with supported options
+        let options;
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = {mimeType: 'audio/webm'};
+        } else {
+          options = {};
+        }
+        
+        const mediaRecorder = new MediaRecorder(stream, options);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+        
+        // Set up event handlers
+        mediaRecorder.ondataavailable = (e) => {
+          console.log("Data available event, data size:", e.data.size);
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+        
+        mediaRecorder.onstop = async () => {
+          console.log("MediaRecorder stopped, processing audio...");
+          console.log("Audio chunks collected:", audioChunksRef.current.length);
+          
+          if (audioChunksRef.current.length === 0) {
+            console.warn("No audio chunks collected");
+            setIsRecording(false);
+            return;
+          }
+          
+          // Create blob from chunks
+          const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
+          console.log("Created audio blob of type", mediaRecorder.mimeType, "size:", audioBlob.size);
+          
+          // Convert blob to array buffer for the Google Speech API
+          const arrayBuffer = await audioBlob.arrayBuffer();
+          console.log("Converted to ArrayBuffer, size:", arrayBuffer.byteLength);
+          
+          try {
+            // Show transcribing indicator
+            setInputMessage("Transcribing...");
+            
+            // Send audio to Google Speech API
+            console.log("Sending to Google Speech API for transcription");
+            const transcript = await googleSpeechService.transcribeAudio(arrayBuffer);
+            console.log("Received transcript:", transcript);
+            
+            if (transcript && transcript.trim()) {
+              setInputMessage(transcript);
+              
+              // Auto-submit after a short delay
+              setTimeout(() => {
+                if (inputRef.current && inputRef.current.form) {
+                  inputRef.current.form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+              }, 500);
+            } else {
+              setInputMessage("");
+              console.warn("Empty transcript received");
+            }
+          } catch (error) {
+            console.error("Error with Google Speech API:", error);
+            setInputMessage("");
+            alert("Sorry, I couldn't understand what you said. Please try again.");
+          } finally {
+            // Stop all tracks
+            stream.getTracks().forEach(track => track.stop());
+            setIsRecording(false);
+          }
+        };
+        
+        // Add error logging
+        mediaRecorder.onerror = (event) => {
+          console.error("MediaRecorder error:", event);
+          setIsRecording(false);
+          alert("Error recording audio");
+        };
+        
+        // Start recording with a time slice to get data frequently
+        mediaRecorder.start(1000); // Get data every second
+        setInputMessage("Recording... (speak now)");
+        setIsRecording(true);
+        console.log("MediaRecorder started with mimeType:", mediaRecorder.mimeType);
+        
+      } catch (error) {
+        console.error("Recording initialization error:", error);
+        setIsRecording(false);
+        alert("Couldn't access your microphone. Please check permissions and try again.");
+      }
     }
   };
   
   // Function to use Web Speech API directly
   const useWebSpeechRecognition = () => {
     try {
-      console.log("Browser speech recognition support check:", 
-                 "SpeechRecognition" in window, "webkitSpeechRecognition" in window);
-      
       // Initialize speech recognition
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      console.log("SpeechRecognition constructor available:", !!SpeechRecognition);
-      
-      if (!SpeechRecognition) {
-        throw new Error("Speech recognition not supported in this browser");
-      }
-      
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
       
@@ -393,12 +473,6 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
-      
-      console.log("Speech recognition configured:", {
-        continuous: recognition.continuous,
-        interimResults: recognition.interimResults,
-        lang: recognition.lang
-      });
       
       // Set up event handlers
       recognition.onstart = () => {
@@ -419,25 +493,10 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       };
       
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error("Web Speech recognition error:", event.error, event.message);
+        console.error("Web Speech recognition error:", event.error);
         setIsRecording(false);
-        
-        // More detailed error messages based on error types
-        switch(event.error) {
-          case 'not-allowed':
-            alert("Microphone access denied. Please allow microphone access in your browser settings.");
-            break;
-          case 'audio-capture':
-            alert("No microphone detected. Please connect a microphone and try again.");
-            break;
-          case 'network':
-            alert("Network error occurred. Please check your internet connection.");
-            break;
-          case 'aborted':
-            console.log("Speech recognition was aborted");
-            break;
-          default:
-            alert(`Speech recognition error: ${event.error || "Unknown error"}`);
+        if (event.error === 'not-allowed') {
+          alert("Microphone access denied. Please allow microphone access in your browser settings.");
         }
       };
       
@@ -587,24 +646,17 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
         { temperature: 0.7 }
       );
       
-      // Clean up response thoroughly
-      // Remove "AI:" prefix, numbered prefixes, and "Hello Sarah," greeting
-      let cleanedResponse = aiResponse
-        .replace(/^(?:1\. )?(?:AI|AI:)\s*:?\s*/i, '') // Remove AI: prefix with variations
-        .replace(/^Hello Sarah,?\s*/i, '')  // Remove greeting
-        .replace(/^[•\*]\s*/, '');  // Remove leading bullet points
-      
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: cleanedResponse,
+        content: aiResponse,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, assistantMessage]);
       
       // Speak the response
-      const plainTextResponse = cleanedResponse.replace(/<[^>]*>/g, ''); // Remove HTML tags
+      const plainTextResponse = aiResponse.replace(/<[^>]*>/g, ''); // Remove HTML tags
       speakText(plainTextResponse, assistantMessage.id);
       
     } catch (error) {
@@ -726,104 +778,15 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const handleVoiceButtonClick = () => {
     const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
     if (lastAssistantMessage) {
-      // This is a direct user interaction, so we can play audio now
-      // Modern browsers require a direct user gesture to allow audio playback
+      // First ensure the speech synthesis is initialized by speaking a silent message
+      // This is a workaround for browsers that require user interaction before speech
+      const silence = new SpeechSynthesisUtterance('');
+      silence.volume = 0;
+      window.speechSynthesis.speak(silence);
       
-      // Get the last message content
+      // Then speak the actual message
       const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
-      
-      // First try using browser's built-in speech directly since it bypasses autoplay restrictions
-      if (window.speechSynthesis && false) { // Disabled for now, using Google TTS
-        try {
-          // Create utterance
-          const utterance = new SpeechSynthesisUtterance(plainTextResponse);
-          
-          // Set voice based on selected persona
-          const voices = window.speechSynthesis.getVoices();
-          if (voices.length > 0) {
-            let selectedVoice = null;
-            if (voicePersona === 'female') {
-              selectedVoice = voices.find(v => v.name.includes('Female') && v.lang.startsWith('en'));
-            } else if (voicePersona === 'male') {
-              selectedVoice = voices.find(v => v.name.includes('Male') && v.lang.startsWith('en'));
-            } else {
-              selectedVoice = voices.find(v => v.lang.startsWith('en'));
-            }
-            
-            if (selectedVoice) {
-              utterance.voice = selectedVoice;
-            }
-          }
-          
-          // Speak immediately (this works because it's triggered by a click)
-          window.speechSynthesis.speak(utterance);
-          
-          setIsSpeaking(true);
-          setCurrentSpeakingMessageId(lastAssistantMessage.id);
-          
-          // Handle end of speech
-          utterance.onend = () => {
-            setIsSpeaking(false);
-            setCurrentSpeakingMessageId(null);
-          };
-          
-          return; // Exit early if browser speech was successful
-        } catch (error) {
-          console.error("Browser speech synthesis failed:", error);
-          // Continue to Google TTS as fallback
-        }
-      }
-
-      // Otherwise try Google TTS
-      try {
-        // Set UI state first
-        setIsSpeaking(true);
-        setCurrentSpeakingMessageId(lastAssistantMessage.id);
-        
-        // Create an audio context - this MUST be inside a user gesture handler
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContext) {
-          // Create and start the audio context
-          const audioContext = new AudioContext();
-          
-          // Perform a simple operation to keep it active
-          const oscillator = audioContext.createOscillator();
-          oscillator.connect(audioContext.destination);
-          oscillator.frequency.value = 0; // Silent
-          oscillator.start();
-          oscillator.stop(audioContext.currentTime + 0.001); // Stop immediately
-          
-          console.log("Audio context initialized with user gesture");
-        }
-        
-        // Directly call the speech service - now that we're in a user gesture handler
-        // this should work properly with the audio context initialized above
-        googleSpeechService.speakText(plainTextResponse, voicePersona)
-          .catch(err => {
-            console.error("Error with Google TTS, forced fallback to browser speech:", err);
-            
-            // Fall back to browser speech synthesis as a last resort
-            if (window.speechSynthesis) {
-              const utterance = new SpeechSynthesisUtterance(plainTextResponse);
-              utterance.onend = () => {
-                setIsSpeaking(false);
-                setCurrentSpeakingMessageId(null);
-              };
-              window.speechSynthesis.speak(utterance);
-            } else {
-              // No fallback available
-              setIsSpeaking(false);
-              setCurrentSpeakingMessageId(null);
-              alert("Speech synthesis is not supported in this browser.");
-            }
-          });
-          
-      } catch (error) {
-        console.error("Error initializing speech with user gesture:", error);
-        setIsSpeaking(false);
-        setCurrentSpeakingMessageId(null);
-        alert("Audio playback failed. Please try a different browser or check your browser settings.");
-      }
+      speakText(plainTextResponse, lastAssistantMessage.id);
     }
   };
 
@@ -869,131 +832,87 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                 variant="outline"
                 size="icon"
                 onClick={stopSpeaking}
-                className="text-red-500 border-red-300 h-8 w-8"
+                className="text-primary border-primary/30 h-8 w-8"
                 aria-label="Stop speaking"
                 title="Stop speaking"
               >
                 <VolumeX className="h-4 w-4" />
               </Button>
             ) : (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleVoiceButtonClick}
-                className="text-primary border-primary/30 h-8 w-8"
-                aria-label="Read last response"
-                title="Read last response"
-                disabled={!messages.some(msg => msg.role === 'assistant')}
-              >
-                <Volume2 className="h-4 w-4" />
-              </Button>
+              <>
+                <div className="relative group">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleVoiceButtonClick}
+                    className="text-primary border-primary/30 h-8 w-8"
+                    aria-label="Read last response"
+                    title="Read with current voice"
+                    disabled={!messages.some(msg => msg.role === 'assistant')}
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                  
+                  {/* Voice selector dropdown that appears on hover */}
+                  <div className="absolute right-0 mt-1 w-48 bg-card rounded-md shadow-lg border border-border hidden group-hover:block z-50">
+                    <div className="p-1 text-xs font-medium text-muted-foreground flex items-center">
+                      <SparklesIcon className="h-3 w-3 mr-1 text-primary" />
+                      <span>Google Chirp HD Voice</span>
+                    </div>
+                    <div className="px-1 pb-1">
+                      <Button
+                        variant={voicePersona === "female" ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start text-xs"
+                        onClick={() => {
+                          setVoicePersona("female");
+                          // Immediately try the voice
+                          setTimeout(() => {
+                            const silence = new SpeechSynthesisUtterance('');
+                            silence.volume = 0;
+                            window.speechSynthesis.speak(silence);
+                          }, 100);
+                        }}
+                      >
+                        Female (Chirp HD)
+                      </Button>
+                      <Button
+                        variant={voicePersona === "male" ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start text-xs"
+                        onClick={() => {
+                          setVoicePersona("male");
+                          // Immediately try the voice
+                          setTimeout(() => {
+                            const silence = new SpeechSynthesisUtterance('');
+                            silence.volume = 0;
+                            window.speechSynthesis.speak(silence);
+                          }, 100);
+                        }}
+                      >
+                        Male (Chirp HD)
+                      </Button>
+                      <Button
+                        variant={voicePersona === "neutral" ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start text-xs"
+                        onClick={() => {
+                          setVoicePersona("neutral");
+                          // Immediately try the voice
+                          setTimeout(() => {
+                            const silence = new SpeechSynthesisUtterance('');
+                            silence.volume = 0;
+                            window.speechSynthesis.speak(silence);
+                          }, 100);
+                        }}
+                      >
+                        Neutral (Chirp HD)
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
-            
-            {/* Voice selector as a separate button with dropdown */}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs px-2 flex items-center gap-1 border border-border"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const dropdown = document.getElementById('voice-dropdown');
-                  if (dropdown) {
-                    dropdown.classList.toggle('hidden');
-                  }
-                }}
-                aria-label="Change voice"
-                title="Change voice"
-              >
-                <span className="whitespace-nowrap">
-                  {voicePersona === "female" ? "Female" : 
-                   voicePersona === "male" ? "Male" : "Neutral"} Voice
-                </span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m6 9 6 6 6-6"/>
-                </svg>
-              </Button>
-              
-              <div 
-                id="voice-dropdown"
-                className="absolute right-0 mt-1 w-40 bg-card rounded-md shadow-lg border border-border hidden z-50"
-              >
-                <div className="p-1 text-xs font-medium text-muted-foreground">
-                  <span>Google Chirp HD Voices</span>
-                </div>
-                <div className="p-1 space-y-1">
-                  <Button
-                    variant={voicePersona === "female" ? "default" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start text-xs"
-                    onClick={() => {
-                      setVoicePersona("female");
-                      document.getElementById('voice-dropdown')?.classList.add('hidden');
-                      
-                      // If speaking, restart with new voice
-                      if (isSpeaking && currentSpeakingMessageId) {
-                        const message = messages.find(msg => msg.id === currentSpeakingMessageId);
-                        if (message) {
-                          stopSpeaking();
-                          setTimeout(() => {
-                            const plainTextResponse = message.content.replace(/<[^>]*>/g, '');
-                            speakText(plainTextResponse, message.id);
-                          }, 100);
-                        }
-                      }
-                    }}
-                  >
-                    Female (Chirp HD)
-                  </Button>
-                  <Button
-                    variant={voicePersona === "male" ? "default" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start text-xs"
-                    onClick={() => {
-                      setVoicePersona("male");
-                      document.getElementById('voice-dropdown')?.classList.add('hidden');
-                      
-                      // If speaking, restart with new voice
-                      if (isSpeaking && currentSpeakingMessageId) {
-                        const message = messages.find(msg => msg.id === currentSpeakingMessageId);
-                        if (message) {
-                          stopSpeaking();
-                          setTimeout(() => {
-                            const plainTextResponse = message.content.replace(/<[^>]*>/g, '');
-                            speakText(plainTextResponse, message.id);
-                          }, 100);
-                        }
-                      }
-                    }}
-                  >
-                    Male (Chirp HD)
-                  </Button>
-                  <Button
-                    variant={voicePersona === "neutral" ? "default" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start text-xs"
-                    onClick={() => {
-                      setVoicePersona("neutral");
-                      document.getElementById('voice-dropdown')?.classList.add('hidden');
-                      
-                      // If speaking, restart with new voice
-                      if (isSpeaking && currentSpeakingMessageId) {
-                        const message = messages.find(msg => msg.id === currentSpeakingMessageId);
-                        if (message) {
-                          stopSpeaking();
-                          setTimeout(() => {
-                            const plainTextResponse = message.content.replace(/<[^>]*>/g, '');
-                            speakText(plainTextResponse, message.id);
-                          }, 100);
-                        }
-                      }
-                    }}
-                  >
-                    Neutral (Chirp HD)
-                  </Button>
-                </div>
-              </div>
-            </div>
             <Button 
               variant="ghost" 
               size="icon" 

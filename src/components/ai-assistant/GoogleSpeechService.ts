@@ -10,7 +10,7 @@ class GoogleSpeechService {
   private isSpeaking = false;
   private speakingAudio: HTMLAudioElement | null = null;
   private backendUrl = 'http://localhost:3002'; // Backend server URL
-  private useFallbackOnly = false; // Set to false to use Google Cloud TTS
+  private useFallbackOnly = true; // Always use browser speech for now until Google Cloud is enabled
 
   initialize(keyFilePath: string) {
     this.keyFilePath = keyFilePath;
@@ -135,151 +135,30 @@ class GoogleSpeechService {
       
       // Get the audio URL from the response
       const data = await response.json();
-      
-      // Log the received URL for debugging
-      console.log("Received audio URL:", data.audioUrl);
-      
-      // Check for fallback message
-      if (data.fallback) {
-        console.log("Server returned fallback message:", data.message);
-        this.fallbackToLocalSpeech(text, voiceType);
-        return;
-      }
-      
-      // Build the full URL and check if it's valid
       const audioUrl = `${this.backendUrl}${data.audioUrl}`;
-      console.log("Full audio URL:", audioUrl);
+      console.log("Received audio URL:", audioUrl);
       
-      // Create a dummy audio element to test the URL
-      const testAudio = new Audio();
-      testAudio.src = audioUrl;
+      // Create and play the audio
+      const audio = new Audio(audioUrl);
+      this.speakingAudio = audio;
       
-      // Test if the file exists by sending a HEAD request
-      try {
-        const headResponse = await fetch(audioUrl, { method: 'HEAD' });
-        if (!headResponse.ok) {
-          console.error("Audio file not accessible:", headResponse.status);
-          throw new Error(`Audio file not accessible: ${headResponse.status}`);
-        }
-        
-        console.log("Audio file verified:", audioUrl);
-      } catch (headError) {
-        console.error("Error checking audio file:", headError);
-        this.fallbackToLocalSpeech(text, voiceType);
-        return;
-      }
-      
-      // Create and play the audio with proper user-interaction handling
-      const audio = new Audio();
-      
-      // Important: Only set the src after attaching event handlers
-      // This helps with some browser quirks around event timing
-      
-      // Set up event handlers first
+      // Set up event handlers
       audio.onended = () => {
-        console.log("Audio playback ended normally");
         this.isSpeaking = false;
         this.speakingAudio = null;
       };
       
       audio.onerror = (event) => {
-        const error = (event as unknown as { target: HTMLAudioElement }).target.error;
-        console.error("Audio playback error:", error?.code, error?.message);
+        console.error("Error playing audio:", event);
         this.isSpeaking = false;
         this.speakingAudio = null;
-        
         // Fall back to browser's speech synthesis in case of audio loading error
         this.fallbackToLocalSpeech(text, voiceType);
       };
       
-      // Only after handlers are attached, set the source
-      audio.src = audioUrl;
-      
-      // Store reference
-      this.speakingAudio = audio;
-      
-      // Special handling for Safari and iOS
-      audio.preload = 'auto';
-      
-      try {
-        // Try to load the audio first (important to catch errors early)
-        await new Promise<void>((resolve, reject) => {
-          const loadHandler = () => {
-            console.log("Audio loaded successfully");
-            audio.removeEventListener('canplaythrough', loadHandler);
-            resolve();
-          };
-          
-          const errorHandler = (e: Event) => {
-            console.error("Error loading audio:", e);
-            audio.removeEventListener('error', errorHandler);
-            reject(new Error("Failed to load audio"));
-          };
-          
-          audio.addEventListener('canplaythrough', loadHandler);
-          audio.addEventListener('error', errorHandler);
-          
-          // Manually start loading
-          audio.load();
-          
-          // Set a timeout in case loading takes too long
-          setTimeout(() => {
-            audio.removeEventListener('canplaythrough', loadHandler);
-            audio.removeEventListener('error', errorHandler);
-            console.warn("Audio loading timed out, attempting to play anyway");
-            resolve();
-          }, 3000);
-        });
-        
-        // Now try to play (this must be from user gesture in modern browsers)
-        console.log("Attempting to play audio...");
-        await audio.play();
-        console.log("Started playing Google Cloud TTS audio");
-      } catch (playError) {
-        console.error("Failed to play audio:", playError);
-        
-        // Try to create a specialized solution for Chrome
-        if ('AudioContext' in window || 'webkitAudioContext' in window) {
-          try {
-            console.log("Attempting alternate playback method with AudioContext...");
-            
-            // Create a new AudioContext
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-            const audioContext = new AudioContext();
-            
-            // Fetch the audio file
-            const response = await fetch(audioUrl);
-            const arrayBuffer = await response.arrayBuffer();
-            
-            // Decode the audio data
-            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            
-            // Create a buffer source
-            const source = audioContext.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(audioContext.destination);
-            
-            // Play the audio
-            source.start(0);
-            
-            // Handle completion
-            source.onended = () => {
-              console.log("AudioContext playback ended");
-              this.isSpeaking = false;
-              this.speakingAudio = null;
-            };
-            
-            console.log("Playing audio using AudioContext");
-            return;
-          } catch (contextError) {
-            console.error("AudioContext playback failed:", contextError);
-          }
-        }
-        
-        // If we got here, all playback methods failed
-        console.error("All audio playback methods failed, falling back to browser speech");
-        this.fallbackToLocalSpeech(text, voiceType);
-      }
+      // Play the audio
+      await audio.play();
+      console.log("Started playing Google Cloud TTS audio");
       
     } catch (error) {
       console.error("Error using Google Cloud TTS:", error);
@@ -297,145 +176,42 @@ class GoogleSpeechService {
     console.log(`Speech synthesis fallback mode ${useFallback ? 'enabled' : 'disabled'}`);
   }
   
-  // Add a better local speech fallback method
-  private fallbackToLocalSpeech(text: string, voiceType: string = 'neutral'): void {
-    if (!window.speechSynthesis) {
-      console.error("Browser does not support speech synthesis");
-      return;
-    }
-    
-    console.log("Using browser's native speech synthesis as fallback");
-    
-    // Preprocess text to improve pronunciation
-    text = this.preprocessTextForSpeech(text);
-    
-    // Create and configure utterance
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Set voice based on selected persona
-    const voices = window.speechSynthesis.getVoices();
-    
-    // If voices aren't loaded yet, wait for them
-    if (voices.length === 0) {
-      console.log("No voices available yet, waiting for voices to load...");
+  // Fallback method using browser's speech synthesis
+  private fallbackToLocalSpeech(text: string, voiceType: string): void {
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
       
-      // Some browsers need this event to get voices
-      window.speechSynthesis.onvoiceschanged = () => {
-        this.selectVoiceAndSpeak(utterance, voiceType);
-      };
+      // Get available voices
+      const voices = window.speechSynthesis.getVoices();
       
-      // Safety timeout in case event never fires
-      setTimeout(() => {
-        this.selectVoiceAndSpeak(utterance, voiceType);
-      }, 1000);
-    } else {
-      // Voices are already loaded
-      this.selectVoiceAndSpeak(utterance, voiceType);
-    }
-  }
-  
-  // Helper to select voice and speak
-  private selectVoiceAndSpeak(utterance: SpeechSynthesisUtterance, voiceType: string): void {
-    const voices = window.speechSynthesis.getVoices();
-    
-    if (voices.length > 0) {
-      console.log(`Available voices (${voices.length}):`, voices.map(v => `${v.name} (${v.lang})`).join(', '));
-      
-      // Try to find an English voice that matches the requested type
+      // Try to find a good voice
       let selectedVoice = null;
-      
       if (voiceType === 'female') {
-        // Female voices often contain 'female' or woman-sounding names
         selectedVoice = voices.find(v => 
-          (v.name.toLowerCase().includes('female') || 
-           v.name.toLowerCase().includes('woman') ||
-           v.name.toLowerCase().includes('girl') ||
-           /samantha|victoria|karen|tessa|monica|amy/i.test(v.name)) && 
-          v.lang.startsWith('en')
+          v.name.includes('Female') && v.lang.startsWith('en')
         );
       } else if (voiceType === 'male') {
-        // Male voices often contain 'male' or man-sounding names
         selectedVoice = voices.find(v => 
-          (v.name.toLowerCase().includes('male') || 
-           v.name.toLowerCase().includes('man') ||
-           v.name.toLowerCase().includes('guy') ||
-           /daniel|david|tom|alex|john|nathan/i.test(v.name)) && 
-          v.lang.startsWith('en')
+          v.name.includes('Male') && v.lang.startsWith('en')
         );
-      }
-      
-      // If we couldn't find a gender-specific voice, just use any English voice
-      if (!selectedVoice) {
+      } else {
         selectedVoice = voices.find(v => v.lang.startsWith('en'));
       }
       
-      // If we found a voice, use it
       if (selectedVoice) {
-        console.log("Selected voice:", selectedVoice.name);
         utterance.voice = selectedVoice;
-      } else {
-        console.warn("Could not find appropriate voice, using default");
       }
-    } else {
-      console.warn("No voices available for browser speech synthesis");
+      
+      // Set voice properties
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      // Speak
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.error("Fallback speech synthesis failed:", e);
     }
-    
-    // Add event handlers
-    utterance.onend = () => {
-      console.log("Browser speech synthesis completed");
-      this.isSpeaking = false;
-      this.speakingAudio = null;
-    };
-    
-    utterance.onerror = (event) => {
-      console.error("Browser speech synthesis error:", event);
-      this.isSpeaking = false;
-      this.speakingAudio = null;
-    };
-    
-    // Set parameters for better voice quality
-    utterance.rate = 1.0;  // Normal speed
-    utterance.pitch = 1.0; // Normal pitch
-    utterance.volume = 1.0; // Full volume
-    
-    // Speak
-    console.log("Starting browser speech synthesis");
-    window.speechSynthesis.speak(utterance);
-  }
-  
-  // Preprocess text to improve speech quality
-  private preprocessTextForSpeech(text: string): string {
-    // Remove HTML tags
-    text = text.replace(/<[^>]*>/g, '');
-    
-    // Remove any "1. AI:" prefix
-    text = text.replace(/^(?:1\. )?AI:\s*/i, '');
-    
-    // Replace bullet points with ordinals
-    const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", 
-                      "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"];
-    let bulletCount = 0;
-    
-    text = text.replace(/\n\s*\*\s*/g, () => {
-      const ordinal = bulletCount < ordinals.length 
-        ? ordinals[bulletCount] 
-        : `Item ${bulletCount + 1}`;
-      bulletCount++;
-      return `\n${ordinal}, `;
-    });
-    
-    // Add pauses after punctuation for better rhythm
-    text = text.replace(/([.!?])\s/g, '$1, ');
-    
-    // Improve pronunciation of common abbreviations
-    text = text.replace(/Dr\./g, "Doctor ");
-    text = text.replace(/Mr\./g, "Mister ");
-    text = text.replace(/Mrs\./g, "Misses ");
-    text = text.replace(/Ms\./g, "Miss ");
-    text = text.replace(/Ph\.D\./g, "P H D ");
-    text = text.replace(/M\.D\./g, "M D ");
-    
-    return text;
   }
   
   // Method to check if speaking
@@ -467,13 +243,6 @@ class GoogleSpeechService {
   private preprocessTextForBetterSpeech(text: string): string {
     // Remove HTML tags
     text = text.replace(/<[^>]*>/g, '');
-    
-    // Replace asterisk bullet points with numbered points
-    let bulletCount = 0;
-    text = text.replace(/\n\s*\*\s*/g, () => {
-      bulletCount++;
-      return `\n${bulletCount}. `;
-    });
     
     // Add pauses after punctuation
     text = text.replace(/([.!?])\s/g, '$1, ');

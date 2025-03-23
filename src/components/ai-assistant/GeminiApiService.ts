@@ -170,12 +170,11 @@ Instructions:
 3. Do not diagnose but help the patient understand their condition and treatments.
 4. Encourage the patient to follow up with their healthcare provider for serious concerns.
 5. Keep responses concise and focused on the patient's questions.
-6. IMPORTANT: NEVER prefix your responses with "AI:" or start with a bullet point. Just respond directly to the patient's questions.
-7. When listing multiple items, use numbered points (1., 2., 3.) not bullet points (*).
-8. When providing structured information like meal plans or exercise regimens, use proper formatting:
+6. When providing structured information like meal plans or exercise regimens, use proper formatting:
    - Use **Section Titles:** for headers (with the colon)
-   - Use numbered lists (1., 2., 3.) for sequential items
+   - Use * bullet points for lists
    - Add blank lines between paragraphs
+   - Keep lists consistently formatted for readability
 `;
   }
 
@@ -186,28 +185,20 @@ Instructions:
     // Trim the entire response
     response = response.trim();
 
-    // Remove any leading "AI:" prefix or bullet points
-    response = response.replace(/^(?:1\. )?(?:AI|AI:)\s*:?\s*/i, '');
-    response = response.replace(/^[•\*]\s*/, '');
-    
     // Remove any leading whitespace from lines
     response = response.replace(/^[ \t]+/gm, '');
     
     // Make section headers consistent
     response = response.replace(/([A-Za-z]+):\s*\n/g, '**$1:**\n\n');
     
-    // Convert bullet points to numbered lists if they're not already
-    // First count how many bullet points we have
-    const bulletMatches = response.match(/^[•\-○\*]\s*(.*?)$/gm);
-    const bulletCount = bulletMatches ? bulletMatches.length : 0;
+    // Make bullet points consistent
+    response = response.replace(/^[•\-○]\s*(.*?)$/gm, '* $1');
     
-    // Only convert to numbered list if there are multiple bullet points
-    if (bulletCount > 1) {
-      let counter = 1;
-      response = response.replace(/^[•\-○\*]\s*(.*?)$/gm, (match, text) => {
-        return `${counter++}. ${text}`;
-      });
-    }
+    // Ensure meal items have bullet points
+    response = response.replace(/^([A-Za-z][\w\s]+):(?!\*)/gm, '* $1:');
+    
+    // Add a line break before lists if missing
+    response = response.replace(/([^\n])\n\*/g, '$1\n\n*');
     
     // Ensure paragraph spacing
     response = response.replace(/([.!?])\s*\n([A-Z])/g, '$1\n\n$2');

@@ -52,6 +52,7 @@ KweCare addresses these challenges through four integrated components:
 3. **Offline Intelligence**: Client-side TensorFlow.js models that adapt to available device resources
 4. **Community Data Sovereignty**: Users control what personal and traditional knowledge is shared
 5. **Adaptive Interface**: Progressive enhancement based on device capability and connectivity
+6. **Voice Accessibility**: Google Cloud Text-to-Speech integration for natural voice interactions
 
 ## 🚀 Getting Started
 
@@ -59,6 +60,7 @@ KweCare addresses these challenges through four integrated components:
 - Node.js (18.0.0 or higher)
 - npm or bun package manager
 - Modern web browser (Chrome, Firefox, Safari, Edge)
+- Google Cloud account with Text-to-Speech API enabled (for voice features)
 
 ### Installation
 
@@ -74,7 +76,14 @@ npm install
 # or with bun
 bun install
 
-# Run the app in development mode
+# Set up environment variables
+cp .env.example .env
+# Edit .env file with your Google Cloud credentials
+
+# Start the TTS server
+npm run server
+
+# In a new terminal, run the app in development mode
 npm run dev
 # or with bun
 bun dev
@@ -147,6 +156,7 @@ View our complete [System Architecture Document](docs/architecture.md) for a det
 - **AI Symptom Assessment**: Offline analysis of symptoms with cultural context
 - **Traditional Medicine Integration**: Information on traditional healing approaches
 - **Voice-Controlled Navigation**: Hands-free control in indigenous languages
+- **Voice Synthesis**: Text-to-speech for improved accessibility
 - **Appointment Management**: Schedule and attend video consultations
 - **Health Records**: Personal health tracking with offline storage
 - **Educational Resources**: Culturally appropriate health information

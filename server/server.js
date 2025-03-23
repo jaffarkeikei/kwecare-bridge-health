@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3002; // Using port 3002 to avoid conflicts
 
 // Enable CORS for the frontend
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000', 'http://localhost:5175', 'http://localhost:5174'] // Allow multiple origins
+  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000'] // Allow multiple origins
 }));
 app.use(express.json());
 
@@ -57,40 +57,6 @@ app.post('/api/tts', async (req, res) => {
       return res.status(400).json({ error: 'Text is required' });
     }
     
-    // Clean up text - remove any "Hello Sarah" prefixes
-    const cleanedText = text.replace(/^(Hello Sarah,?\s*)/i, '');
-    
-    // Remove any "1. AI:" prefix
-    const withoutAIPrefix = cleanedText.replace(/^(?:1\. )?AI:\s*/i, '');
-    
-    // Replace asterisk bullet points with ordinals for better TTS reading
-    const withOrdinals = withoutAIPrefix.replace(/\n\s*\*\s*/g, (match, index, fullText) => {
-      // Count how many asterisks have appeared before this one
-      const previousAsterisks = fullText.substring(0, index).match(/\n\s*\*\s*/g) || [];
-      const count = previousAsterisks.length;
-      
-      // Convert count to ordinal word
-      let ordinal;
-      switch(count) {
-        case 0: ordinal = "First, "; break;
-        case 1: ordinal = "Second, "; break;
-        case 2: ordinal = "Third, "; break;
-        case 3: ordinal = "Fourth, "; break;
-        case 4: ordinal = "Fifth, "; break;
-        case 5: ordinal = "Sixth, "; break;
-        case 6: ordinal = "Seventh, "; break;
-        case 7: ordinal = "Eighth, "; break;
-        case 8: ordinal = "Ninth, "; break;
-        case 9: ordinal = "Tenth, "; break;
-        default: ordinal = `Item ${count + 1}, `;
-      }
-      
-      return `\n${ordinal}`;
-    });
-    
-    // Final processed text
-    const finalText = withOrdinals;
-    
     // Configure voice based on the selected type
     let voiceConfig;
     switch(voiceType) {
@@ -108,21 +74,11 @@ app.post('/api/tts', async (req, res) => {
           ssmlGender: 'MALE'
         };
         break;
-      case 'neutral':
-        // For 'neutral', use the female voice as fallback since neutral isn't supported
-        console.log('Neutral gender not supported by Google TTS, falling back to female voice');
-        voiceConfig = {
-          languageCode: 'en-US',
-          name: 'en-US-Neural2-F', // Neural Chirp HD female voice as fallback
-          ssmlGender: 'FEMALE'
-        };
-        break;
       default:
-        // Default to female voice
         voiceConfig = {
           languageCode: 'en-US',
-          name: 'en-US-Neural2-F', // Neural Chirp HD female voice
-          ssmlGender: 'FEMALE'
+          name: 'en-US-Neural2-A', // Neural Chirp HD neutral voice
+          ssmlGender: 'NEUTRAL'
         };
     }
     
@@ -148,7 +104,7 @@ app.post('/api/tts', async (req, res) => {
     
     // Build the request
     const request = {
-      input: { text: finalText },
+      input: { text },
       voice: voiceConfig,
       audioConfig: {
         audioEncoding: 'MP3',
@@ -157,7 +113,7 @@ app.post('/api/tts', async (req, res) => {
       },
     };
     
-    console.log(`Sending TTS request for text: "${finalText.substring(0, 50)}..."`);
+    console.log(`Sending TTS request for text: "${text.substring(0, 50)}..."`);
     
     try {
       // Call Google Cloud TTS API
@@ -198,6 +154,12 @@ app.post('/api/tts', async (req, res) => {
   }
 });
 
+// Serve static files from the public directory
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+// Add a middleware to handle CORS preflight requests for all routes
+app.options('*', cors());
+
 // Add a test endpoint to check if server is working
 app.get('/api/test', (req, res) => {
   res.json({ 
@@ -205,52 +167,6 @@ app.get('/api/test', (req, res) => {
     apiEnabled
   });
 });
-
-// Special route for audio files with proper headers
-app.get('/public/:filename', (req, res, next) => {
-  const filename = req.params.filename;
-  
-  // Only process MP3 files
-  if (!filename.endsWith('.mp3')) {
-    return next(); // Let the default static middleware handle it
-  }
-  
-  const filePath = path.join(__dirname, 'public', filename);
-  
-  // Check if file exists
-  fs.access(filePath, fs.constants.F_OK, (err) => {
-    if (err) {
-      console.error(`Audio file not found: ${filePath}`);
-      return res.status(404).json({ error: 'Audio file not found' });
-    }
-    
-    // Add specific headers for audio files
-    res.set({
-      'Content-Type': 'audio/mpeg',
-      'Accept-Ranges': 'bytes',
-      'Cache-Control': 'public, max-age=0',
-      'Access-Control-Allow-Origin': '*' // Allow any origin to access the audio
-    });
-    
-    // Stream the file
-    const stream = fs.createReadStream(filePath);
-    stream.pipe(res);
-  });
-});
-
-// Serve static files from the public directory
-app.use('/public', express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.mp3')) {
-      res.set('Content-Type', 'audio/mpeg');
-      res.set('Accept-Ranges', 'bytes');
-      res.set('Access-Control-Allow-Origin', '*');
-    }
-  }
-}));
-
-// Add a middleware to handle CORS preflight requests for all routes
-app.options('*', cors());
 
 // Add a status endpoint to check API status
 app.get('/api/status', (req, res) => {

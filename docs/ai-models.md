@@ -507,4 +507,60 @@ graph TD
 4. **Enhanced Cultural Adaptation**
    - Region-specific model variations
    - Community-specific health knowledge integration
-   - Traditional seasonal health guidance 
+   - Traditional seasonal health guidance
+
+## Cloud AI Integration
+
+In addition to the client-side AI capabilities, KweCare now integrates with Google Cloud AI services to enhance user experience in areas requiring more computational resources or specialized models.
+
+### Google Cloud Text-to-Speech
+
+KweCare leverages Google Cloud's Text-to-Speech API to provide high-quality voice output:
+
+```mermaid
+graph TD
+    subgraph "TTS Integration"
+        ClientRequest[Client Request] --> ProxyServer[TTS Proxy Server]
+        ProxyServer --> GoogleAPI[Google Cloud TTS API]
+        GoogleAPI --> AudioGeneration[Audio Generation]
+        AudioGeneration --> ResponseHandling[Response Handling]
+        ResponseHandling --> AudioStorage[Audio File Storage]
+        AudioStorage --> ClientPlayback[Client Playback]
+    end
+    
+    subgraph "Fallback Mechanism"
+        APIUnavailable[API Unavailable] --> BrowserTTS[Browser TTS]
+        BrowserTTS --> FallbackPlayback[Fallback Playback]
+    end
+    
+    ProxyServer --> |API Error| APIUnavailable
+```
+
+#### Model Specifications
+
+The Text-to-Speech integration uses Google's Neural2 voice models:
+
+| Voice Model | Language | Description |
+|-------------|----------|-------------|
+| Neural2-A | English (US) | Neutral voice with natural intonation |
+| Neural2-F | English (US) | Female voice with high fidelity |
+| Neural2-D | English (US) | Male voice with clear pronunciation |
+
+#### Future Enhancements
+
+Future plans for the TTS integration include:
+
+1. Support for indigenous language pronunciation
+2. Custom voice models trained on native speakers
+3. Integration with traditional storytelling elements
+4. Emotion and context-aware speech patterns
+
+### Planned Cloud AI Integrations
+
+KweCare is planning additional Google Cloud AI integrations:
+
+1. **Vision API**: For enhanced medical image analysis
+2. **Translation API**: For dynamic content translation between indigenous languages
+3. **Natural Language API**: For improved symptom analysis and health insights
+
+These cloud services will complement the existing on-device TensorFlow.js models, providing enhanced capabilities when connectivity is available while maintaining core functionality offline. 
