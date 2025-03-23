@@ -115,6 +115,9 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
     try {
       if (download) {
         setIsGeneratingReport(true);
+        
+        // Add a short delay to allow the UI to update and show the loading state
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
       const reportElement = document.getElementById('analytics-report');
@@ -123,11 +126,43 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
         return;
       }
       
-      const canvas = await html2canvas(reportElement, {
-        scale: 2,
+      // Create a clone of the report to avoid modifying the original
+      const reportClone = reportElement.cloneNode(true) as HTMLElement;
+      reportClone.style.position = 'fixed';
+      reportClone.style.top = '0';
+      reportClone.style.left = '0';
+      reportClone.style.width = '800px';
+      reportClone.style.height = 'auto';
+      reportClone.style.zIndex = '-9999';
+      reportClone.style.opacity = '1';
+      reportClone.style.backgroundColor = 'white';
+      reportClone.style.visibility = 'visible';
+      reportClone.style.overflow = 'visible';
+      reportClone.style.pointerEvents = 'none';
+      
+      // Add the clone to the document temporarily
+      document.body.appendChild(reportClone);
+      
+      // Use higher scale for better quality
+      const canvas = await html2canvas(reportClone, {
+        scale: 2.5,
         useCORS: true,
-        logging: false
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        imageTimeout: 0,
+        onclone: (doc) => {
+          // In the cloned document, make elements visible for better rendering
+          const elem = doc.getElementById('analytics-report');
+          if (elem) {
+            elem.style.visibility = 'visible';
+            elem.style.opacity = '1';
+          }
+        }
       });
+      
+      // Remove the clone from the document
+      document.body.removeChild(reportClone);
       
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -139,17 +174,36 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
       const imgWidth = 210; // A4 width in mm
       const imgHeight = canvas.height * imgWidth / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      // If the height exceeds A4, create multiple pages
+      if (imgHeight > 297) {
+        let heightLeft = imgHeight;
+        let position = 0;
+        let page = 0;
+        
+        while (heightLeft > 0) {
+          pdf.addPage();
+          if (page > 0) {
+            pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
+          } else {
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          }
+          heightLeft -= 297;
+          position += 297;
+          page++;
+        }
+      } else {
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      }
       
       if (download) {
-        pdf.save(`health_analytics_report.pdf`);
+        pdf.save(`health_analytics_report_${new Date().toISOString().split('T')[0]}.pdf`);
         toast.success("Analytics report downloaded successfully");
       }
       
       return pdf;
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast.error("Failed to generate analytics report");
+      toast.error("Failed to generate analytics report: " + (error instanceof Error ? error.message : String(error)));
       return null;
     } finally {
       if (download) {
@@ -163,11 +217,31 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
   };
 
   const handleGenerateReport = async () => {
-    await generatePDF(true);
+    setIsGeneratingReport(true);
+    try {
+      // Add a small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await generatePDF(true);
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error("Failed to generate report");
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
   const handleDownloadReport = async () => {
-    await generatePDF(true);
+    setIsGeneratingReport(true);
+    try {
+      // Add a small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await generatePDF(true);
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast.error("Failed to download report");
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
   const renderTrend = (current: number, previous: number) => {
@@ -194,12 +268,36 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
         </CardContent>
       </Card>
 
-      <div id="analytics-report" className="absolute left-[-9999px] top-[-9999px] w-[800px] opacity-0 pointer-events-none" style={{ visibility: 'hidden' }}>
+      <div id="analytics-report" className="hidden-report">
         <div className="p-6 bg-white space-y-6">
           <div className="border-b pb-4">
             <h2 className="text-2xl font-bold">Health Analytics Report</h2>
             <div className="mt-1 text-sm text-muted-foreground">
               <div>Generated on {new Date().toLocaleDateString()}</div>
+              <div className="mt-1">Patient ID: TRI-20240615-089</div>
+              <div className="mt-1">Provider: Dr. Sarah Johnson</div>
+            </div>
+          </div>
+          
+          <div className="border-b pb-4">
+            <h3 className="text-lg font-semibold mb-2">Patient Overview</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm text-muted-foreground">Age</div>
+                <div className="text-base font-medium">48 years</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Gender</div>
+                <div className="text-base font-medium">Female</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Primary Condition</div>
+                <div className="text-base font-medium">Type 2 Diabetes, Hypertension</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Risk Level</div>
+                <div className="text-base font-medium">Moderate</div>
+              </div>
             </div>
           </div>
           
@@ -211,16 +309,34 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
                   <LineChart data={glucoseData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
-                    <YAxis />
+                    <YAxis domain={[5, 10]} />
                     <Tooltip />
                     <Legend />
                     <Line type="monotone" dataKey="glucose" stroke="#8B5CF6" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-3 text-sm">
-                <p className="text-muted-foreground">Average blood glucose level: 7.4 mmol/L</p>
-                <p className="text-muted-foreground">Target: &lt; 7.0 mmol/L</p>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Average blood glucose level:</p>
+                  <p className="text-sm font-bold">7.4 mmol/L</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Target range:</p>
+                  <p className="text-sm font-bold">&lt; 7.0 mmol/L</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">3-month trend:</p>
+                  <p className="text-sm font-bold text-amber-600">+0.2 mmol/L (↑2.7%)</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Status:</p>
+                  <p className="text-sm bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Above Target</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Last HbA1c:</p>
+                  <p className="text-sm font-bold">7.8% (62 mmol/mol)</p>
+                </div>
               </div>
             </div>
           </div>
@@ -233,7 +349,7 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
                   <LineChart data={bloodPressureData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
-                    <YAxis />
+                    <YAxis domain={[60, 160]} />
                     <Tooltip />
                     <Legend />
                     <Line type="monotone" dataKey="systolic" stroke="#D946EF" strokeWidth={2} />
@@ -241,9 +357,27 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-3 text-sm">
-                <p className="text-muted-foreground">Average blood pressure: 143/90 mmHg</p>
-                <p className="text-muted-foreground">Target: &lt; 130/80 mmHg</p>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Average blood pressure:</p>
+                  <p className="text-sm font-bold">143/90 mmHg</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Target range:</p>
+                  <p className="text-sm font-bold">&lt; 130/80 mmHg</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">3-month trend:</p>
+                  <p className="text-sm font-bold text-red-600">+3/-1 mmHg</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Status:</p>
+                  <p className="text-sm bg-red-100 text-red-800 px-2 py-0.5 rounded-full">Stage 1 Hypertension</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Cardiovascular risk:</p>
+                  <p className="text-sm font-bold">Moderate</p>
+                </div>
               </div>
             </div>
           </div>
@@ -272,9 +406,27 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-3 text-sm">
-                <p className="text-muted-foreground">Overall medication adherence rate: 82%</p>
-                <p className="text-muted-foreground">Target: &gt; 90%</p>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Overall medication adherence rate:</p>
+                  <p className="text-sm font-bold">82%</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Target adherence:</p>
+                  <p className="text-sm font-bold">&gt; 90%</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">3-month trend:</p>
+                  <p className="text-sm font-bold text-green-600">+5%</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Status:</p>
+                  <p className="text-sm bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Needs Improvement</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Most missed medication:</p>
+                  <p className="text-sm font-bold">Lisinopril (evening dose)</p>
+                </div>
               </div>
             </div>
           </div>
@@ -284,23 +436,51 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
             <div className="space-y-2">
               {labResultsData.map((lab, i) => (
                 <div key={i} className="border p-3 rounded-lg">
-                  <h4 className="font-medium">{lab.test}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                  <h4 className="font-medium flex items-center justify-between">
+                    <span>{lab.test}</span>
+                    <span className={
+                      lab.test === "HDL" 
+                        ? (lab.current > 40 ? "text-green-600" : "text-amber-600")
+                        : (lab.test === "eGFR" 
+                            ? (lab.current > 60 ? "text-green-600" : "text-amber-600")
+                            : (lab.current < parseInt(lab.target.match(/\d+/)?.[0] || "0") 
+                                ? "text-green-600" 
+                                : "text-amber-600"))
+                    }>
+                      {lab.test === "HDL" || lab.test === "eGFR" 
+                        ? (lab.current >= parseInt(lab.target.match(/\d+/)?.[0] || "0") ? "Normal" : "Below Target")
+                        : (lab.current <= parseInt(lab.target.match(/\d+/)?.[0] || "0") ? "Normal" : "Above Target")}
+                    </span>
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
                     <div>
                       <div className="text-xs text-muted-foreground">Previous</div>
-                      <div className="text-sm">{lab.previous}</div>
+                      <div className="text-sm font-medium">{lab.previous}</div>
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground">Current</div>
-                      <div className="flex items-center text-sm">
+                      <div className="flex items-center text-sm font-medium">
                         {lab.current}
                         {renderTrend(lab.current, lab.previous)}
                       </div>
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground">Target</div>
-                      <div className="text-sm">{lab.target}</div>
+                      <div className="text-sm font-medium">{lab.target}</div>
                     </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Date</div>
+                      <div className="text-sm font-medium">
+                        {new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {lab.test === "HbA1c" && "Measures average blood glucose over past 3 months. Key for diabetes management."}
+                    {lab.test === "LDL" && "Low-density lipoprotein, or 'bad' cholesterol. Key risk factor for heart disease."}
+                    {lab.test === "HDL" && "High-density lipoprotein, or 'good' cholesterol. Higher levels are protective for heart health."}
+                    {lab.test === "Triglycerides" && "A type of fat in the blood. Elevated levels increase heart disease risk."}
+                    {lab.test === "eGFR" && "Estimates kidney function. Lower values indicate reduced kidney function."}
                   </div>
                 </div>
               ))}
@@ -331,8 +511,27 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-3 text-sm">
-                <p className="text-muted-foreground">Appointment attendance rate: 90%</p>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Appointment attendance rate:</p>
+                  <p className="text-sm font-bold">90%</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Total appointments (last 12 months):</p>
+                  <p className="text-sm font-bold">12</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Visits completed:</p>
+                  <p className="text-sm font-bold">10</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Status:</p>
+                  <p className="text-sm bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Excellent</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Next scheduled appointment:</p>
+                  <p className="text-sm font-bold">June 15, 2024</p>
+                </div>
               </div>
             </div>
           </div>
@@ -391,12 +590,18 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
                   Your average blood glucose is above target levels. Consider reviewing your diet and 
                   medication adherence with your healthcare provider.
                 </p>
+                <p className="text-sm mt-2">
+                  <strong>Recommendation:</strong> Schedule a nutrition consultation to optimize meal planning. Consider continuous glucose monitoring for better insights into glucose patterns.
+                </p>
               </div>
               <div className="border p-3 rounded-lg">
                 <h4 className="font-medium text-amber-600">Blood Pressure Management</h4>
                 <p className="text-sm mt-1">
                   Your blood pressure readings remain elevated. Continue with prescribed medications and 
                   consider increasing physical activity and reducing sodium intake.
+                </p>
+                <p className="text-sm mt-2">
+                  <strong>Recommendation:</strong> Implement the DASH diet (Dietary Approaches to Stop Hypertension). Aim for 150 minutes of moderate aerobic activity weekly. Consider home blood pressure monitoring.
                 </p>
               </div>
               <div className="border p-3 rounded-lg">
@@ -405,12 +610,52 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
                   Excellent appointment attendance. Maintaining regular check-ups helps ensure 
                   proactive management of your health conditions.
                 </p>
+                <p className="text-sm mt-2">
+                  <strong>Recommendation:</strong> Continue with quarterly follow-ups. Consider joining our diabetes peer support group that meets monthly.
+                </p>
               </div>
             </div>
           </div>
           
-          <div className="text-xs text-muted-foreground border-t pt-4">
-            Generated on {new Date().toLocaleString()} by KweCare Health
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-semibold mb-2">Medication Summary</h3>
+            <div className="space-y-2">
+              <div className="grid grid-cols-4 gap-2 text-sm font-medium border-b pb-2">
+                <div>Medication</div>
+                <div>Dosage</div>
+                <div>Frequency</div>
+                <div>Purpose</div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-sm py-2 border-b">
+                <div>Metformin</div>
+                <div>1000 mg</div>
+                <div>Twice daily</div>
+                <div>Diabetes management</div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-sm py-2 border-b">
+                <div>Lisinopril</div>
+                <div>20 mg</div>
+                <div>Once daily</div>
+                <div>Blood pressure control</div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-sm py-2 border-b">
+                <div>Atorvastatin</div>
+                <div>40 mg</div>
+                <div>Once daily (evening)</div>
+                <div>Cholesterol management</div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-sm py-2">
+                <div>Aspirin</div>
+                <div>81 mg</div>
+                <div>Once daily</div>
+                <div>Cardiovascular protection</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-xs text-muted-foreground border-t pt-4 flex justify-between">
+            <div>Generated on {new Date().toLocaleString()} by KweCare Health</div>
+            <div>Page 1 of 1</div>
           </div>
         </div>
       </div>
@@ -748,18 +993,38 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
         
         <button
           onClick={handleGenerateReport}
+          disabled={isGeneratingReport}
           className="mx-3 px-8 py-3 bg-blue-600 text-white rounded-md font-medium inline-flex items-center"
         >
-          <FileText className="mr-2 h-5 w-5" />
-          Generate Detailed Report
+          {isGeneratingReport ? (
+            <>
+              <Clock8 className="mr-2 h-5 w-5 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <FileText className="mr-2 h-5 w-5" />
+              Generate Detailed Report
+            </>
+          )}
         </button>
         
         <button
           onClick={handleDownloadReport}
+          disabled={isGeneratingReport}
           className="mx-3 px-8 py-3 bg-green-600 text-white rounded-md font-medium inline-flex items-center"
         >
-          <Download className="mr-2 h-5 w-5" />
-          Export Data
+          {isGeneratingReport ? (
+            <>
+              <Clock8 className="mr-2 h-5 w-5 animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-5 w-5" />
+              Export Data
+            </>
+          )}
         </button>
       </div>
 
