@@ -611,17 +611,20 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
         { temperature: 0.7 }
       );
       
+      // Remove "AI:" prefix if present
+      const cleanedResponse = aiResponse.replace(/^AI:\s*/i, '');
+      
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: aiResponse,
+        content: cleanedResponse,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, assistantMessage]);
       
       // Speak the response
-      const plainTextResponse = aiResponse.replace(/<[^>]*>/g, ''); // Remove HTML tags
+      const plainTextResponse = cleanedResponse.replace(/<[^>]*>/g, ''); // Remove HTML tags
       speakText(plainTextResponse, assistantMessage.id);
       
     } catch (error) {
@@ -797,87 +800,131 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                 variant="outline"
                 size="icon"
                 onClick={stopSpeaking}
-                className="text-primary border-primary/30 h-8 w-8"
+                className="text-red-500 border-red-300 h-8 w-8"
                 aria-label="Stop speaking"
                 title="Stop speaking"
               >
                 <VolumeX className="h-4 w-4" />
               </Button>
             ) : (
-              <>
-                <div className="relative group">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleVoiceButtonClick}
-                    className="text-primary border-primary/30 h-8 w-8"
-                    aria-label="Read last response"
-                    title="Read with current voice"
-                    disabled={!messages.some(msg => msg.role === 'assistant')}
-                  >
-                    <Volume2 className="h-4 w-4" />
-                  </Button>
-                  
-                  {/* Voice selector dropdown that appears on hover */}
-                  <div className="absolute right-0 mt-1 w-48 bg-card rounded-md shadow-lg border border-border hidden group-hover:block z-50">
-                    <div className="p-1 text-xs font-medium text-muted-foreground flex items-center">
-                      <SparklesIcon className="h-3 w-3 mr-1 text-primary" />
-                      <span>Google Chirp HD Voice</span>
-                    </div>
-                    <div className="px-1 pb-1">
-                      <Button
-                        variant={voicePersona === "female" ? "default" : "ghost"}
-                        size="sm"
-                        className="w-full justify-start text-xs"
-                        onClick={() => {
-                          setVoicePersona("female");
-                          // Immediately try the voice
-                          setTimeout(() => {
-                            const silence = new SpeechSynthesisUtterance('');
-                            silence.volume = 0;
-                            window.speechSynthesis.speak(silence);
-                          }, 100);
-                        }}
-                      >
-                        Female (Chirp HD)
-                      </Button>
-                      <Button
-                        variant={voicePersona === "male" ? "default" : "ghost"}
-                        size="sm"
-                        className="w-full justify-start text-xs"
-                        onClick={() => {
-                          setVoicePersona("male");
-                          // Immediately try the voice
-                          setTimeout(() => {
-                            const silence = new SpeechSynthesisUtterance('');
-                            silence.volume = 0;
-                            window.speechSynthesis.speak(silence);
-                          }, 100);
-                        }}
-                      >
-                        Male (Chirp HD)
-                      </Button>
-                      <Button
-                        variant={voicePersona === "neutral" ? "default" : "ghost"}
-                        size="sm"
-                        className="w-full justify-start text-xs"
-                        onClick={() => {
-                          setVoicePersona("neutral");
-                          // Immediately try the voice
-                          setTimeout(() => {
-                            const silence = new SpeechSynthesisUtterance('');
-                            silence.volume = 0;
-                            window.speechSynthesis.speak(silence);
-                          }, 100);
-                        }}
-                      >
-                        Neutral (Chirp HD)
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleVoiceButtonClick}
+                className="text-primary border-primary/30 h-8 w-8"
+                aria-label="Read last response"
+                title="Read last response"
+                disabled={!messages.some(msg => msg.role === 'assistant')}
+              >
+                <Volume2 className="h-4 w-4" />
+              </Button>
             )}
+            
+            {/* Voice selector as a separate button with dropdown */}
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs px-2 flex items-center gap-1 border border-border"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const dropdown = document.getElementById('voice-dropdown');
+                  if (dropdown) {
+                    dropdown.classList.toggle('hidden');
+                  }
+                }}
+                aria-label="Change voice"
+                title="Change voice"
+              >
+                <span className="whitespace-nowrap">
+                  {voicePersona === "female" ? "Female" : 
+                   voicePersona === "male" ? "Male" : "Neutral"} Voice
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </Button>
+              
+              <div 
+                id="voice-dropdown"
+                className="absolute right-0 mt-1 w-40 bg-card rounded-md shadow-lg border border-border hidden z-50"
+              >
+                <div className="p-1 text-xs font-medium text-muted-foreground">
+                  <span>Google Chirp HD Voices</span>
+                </div>
+                <div className="p-1 space-y-1">
+                  <Button
+                    variant={voicePersona === "female" ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={() => {
+                      setVoicePersona("female");
+                      document.getElementById('voice-dropdown')?.classList.add('hidden');
+                      
+                      // If speaking, restart with new voice
+                      if (isSpeaking && currentSpeakingMessageId) {
+                        const message = messages.find(msg => msg.id === currentSpeakingMessageId);
+                        if (message) {
+                          stopSpeaking();
+                          setTimeout(() => {
+                            const plainTextResponse = message.content.replace(/<[^>]*>/g, '');
+                            speakText(plainTextResponse, message.id);
+                          }, 100);
+                        }
+                      }
+                    }}
+                  >
+                    Female (Chirp HD)
+                  </Button>
+                  <Button
+                    variant={voicePersona === "male" ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={() => {
+                      setVoicePersona("male");
+                      document.getElementById('voice-dropdown')?.classList.add('hidden');
+                      
+                      // If speaking, restart with new voice
+                      if (isSpeaking && currentSpeakingMessageId) {
+                        const message = messages.find(msg => msg.id === currentSpeakingMessageId);
+                        if (message) {
+                          stopSpeaking();
+                          setTimeout(() => {
+                            const plainTextResponse = message.content.replace(/<[^>]*>/g, '');
+                            speakText(plainTextResponse, message.id);
+                          }, 100);
+                        }
+                      }
+                    }}
+                  >
+                    Male (Chirp HD)
+                  </Button>
+                  <Button
+                    variant={voicePersona === "neutral" ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={() => {
+                      setVoicePersona("neutral");
+                      document.getElementById('voice-dropdown')?.classList.add('hidden');
+                      
+                      // If speaking, restart with new voice
+                      if (isSpeaking && currentSpeakingMessageId) {
+                        const message = messages.find(msg => msg.id === currentSpeakingMessageId);
+                        if (message) {
+                          stopSpeaking();
+                          setTimeout(() => {
+                            const plainTextResponse = message.content.replace(/<[^>]*>/g, '');
+                            speakText(plainTextResponse, message.id);
+                          }, 100);
+                        }
+                      }
+                    }}
+                  >
+                    Neutral (Chirp HD)
+                  </Button>
+                </div>
+              </div>
+            </div>
             <Button 
               variant="ghost" 
               size="icon" 
