@@ -24,22 +24,26 @@ KweCare addresses these challenges through four integrated components:
 - **AI-Powered Symptom Checker**: Pre-loaded TensorFlow Lite models analyze symptoms, vital signs, and images without internet
 - **Predictive Alerts**: AI identifies risks for diabetes, hypertension, and infections, providing guidance in Indigenous languages
 - **Progressive Enhancement**: Core functions work offline, enhanced capabilities activate when online
+- **Image Recognition**: Visual analysis of skin conditions, wounds, and basic diagnostic images
 
 ### 2. Satellite Telemedicine
 - **Low-Bandwidth Video Consultations**: Integration with Starlink API for secure, high-quality calls with urban specialists
 - **Data Syncing**: Records save locally and upload automatically when connectivity resumes
 - **Store-and-Forward**: Critical data can be queued for transmission when connectivity becomes available
+- **Signal Optimization**: Adaptive video quality based on current bandwidth conditions
 
 ### 3. Cultural Safety Features
 - **Indigenous Language Support**: Full UI, voice commands, and content in Cree, Inuktitut, Ojibwe, Michif, and Denesuline
 - **Traditional Knowledge Integration**: Educational modules co-designed with Elders and Knowledge Keepers
 - **Traditional Medicine Database**: Contextualized information about indigenous healing practices
 - **Community Resources**: Connection to local health workers and cultural supports
+- **Voice Commands**: Accessibility through natural language in indigenous languages
 
 ### 4. Dual User Experience
 - **Patient Portal**: Self-monitoring tools, appointment scheduling, and health education
 - **Healthcare Provider Portal**: Patient management, clinical decision support, and cultural context resources
 - **Seamless Bridging**: Smooth data sharing between patients and providers with explicit consent controls
+- **Treatment Planning**: Collaborative care plan development with cultural considerations
 
 ## 🧠 Key Innovations
 
@@ -47,6 +51,7 @@ KweCare addresses these challenges through four integrated components:
 2. **Cultural Safety By Design**: Indigenous languages, knowledge, and practices embedded throughout
 3. **Offline Intelligence**: Client-side TensorFlow.js models that adapt to available device resources
 4. **Community Data Sovereignty**: Users control what personal and traditional knowledge is shared
+5. **Adaptive Interface**: Progressive enhancement based on device capability and connectivity
 
 ## 🚀 Getting Started
 
@@ -82,13 +87,50 @@ npm run build
 
 KweCare is built with a comprehensive architecture detailed in our [architecture documentation](docs/architecture.md). Key highlights:
 
-- **Frontend**: React, TypeScript, TailwindCSS with Shadcn UI components
-- **AI Integration**: TensorFlow.js for client-side ML capabilities
-- **State Management**: Context API for global state, React Query for data
-- **Authentication**: Role-based (patient/provider) with local storage persistence
-- **Offline Support**: IndexedDB/localStorage fallbacks for disconnected operation
+### Application Architecture
 
-View our complete [System Architecture Diagram](docs/architecture.md) for a detailed overview.
+```mermaid
+graph TD
+    Client[Client Application] --> Auth[Authentication Module]
+    Auth -->|Authenticated| RoleRouter[Role-Based Router]
+    RoleRouter -->|Patient| PD[Patient Dashboard]
+    RoleRouter -->|Provider| HPD[Healthcare Provider Dashboard]
+    
+    PD --> AIDI[AI Diagnostics]
+    PD --> APPT[Appointments]
+    PD --> HR[Health Records]
+    PD --> CS[Cultural Safety]
+    
+    HPD --> PM[Patient Management]
+    HPD --> HAPPT[Provider Appointments]
+    HPD --> PHR[Patient Health Records]
+    HPD --> TP[Treatment Plans]
+    
+    AIDI --- TFL[TensorFlow.js Models]
+    CS --- LangS[Language Services]
+    APPT --- Tele[Telemedicine]
+    HR --- Records[Medical Records]
+```
+
+### Tech Stack
+
+- **Frontend**: React with TypeScript for type safety
+- **UI Framework**: TailwindCSS with Shadcn UI components for accessibility
+- **AI Integration**: TensorFlow.js for client-side ML capabilities
+- **State Management**: Context API for global state, TanStack Query for data fetching
+- **Authentication**: Role-based (patient/provider) with local storage persistence
+- **Offline Support**: IndexedDB/localStorage for disconnected operation
+- **Internationalization**: i18next for multilingual interface
+- **Accessibility**: WCAG 2.1 AA compliant with voice command support
+
+View our complete [System Architecture Document](docs/architecture.md) for a detailed overview, including:
+
+- Detailed component architecture
+- Data flow diagrams
+- Offline capability implementation
+- Security architecture
+- Cultural integration design
+- AI model architecture
 
 ## 📊 Impact Metrics
 
@@ -106,6 +148,8 @@ View our complete [System Architecture Diagram](docs/architecture.md) for a deta
 - **Traditional Medicine Integration**: Information on traditional healing approaches
 - **Voice-Controlled Navigation**: Hands-free control in indigenous languages
 - **Appointment Management**: Schedule and attend video consultations
+- **Health Records**: Personal health tracking with offline storage
+- **Educational Resources**: Culturally appropriate health information
 
 ### For Healthcare Providers
 - **Cultural Context Awareness**: Traditional knowledge integration with clinical care
@@ -113,8 +157,10 @@ View our complete [System Architecture Diagram](docs/architecture.md) for a deta
 - **Cultural Safety Resources**: Access to traditional knowledge and protocols
 - **Remote Consultation Tools**: Low-bandwidth optimized video calling
 - **Clinical Decision Support**: AI-assisted recommendations with cultural context
+- **Treatment Planning**: Collaborative care plan development
+- **Patient Monitoring**: Health status tracking and alert management
 
-## 📱 Screenshots
+## 📱 Application Screens
 
 <div align="center">
   <img src="docs/images/symptom-checker-cree.png" alt="Symptom Checker in Cree" width="200"/>
@@ -123,21 +169,57 @@ View our complete [System Architecture Diagram](docs/architecture.md) for a deta
   <img src="docs/images/cultural-safety-center.png" alt="Cultural Safety Center" width="200"/>
 </div>
 
-## 👥 Development Team
-
-- **Frontend Developer**: React/TailwindCSS implementation and responsive design
-- **ML Engineer**: TensorFlow.js models and offline AI capabilities
-- **Cultural Safety Expert**: Indigenous language integration and cultural protocols
-- **UX Designer**: Accessible and culturally responsive interfaces
-- **Telemedicine Specialist**: Low-bandwidth communication optimization
-
 ## 🔄 Technical Innovations
+
+### Offline-First Architecture
+
+```mermaid
+graph TD
+    subgraph "Offline Strategy"
+        OFL[Offline-First Approach]
+        OFL --> LDS[Local Data Storage]
+        OFL --> CAI[Client-side AI]
+        OFL --> NAS[Network-Aware Sync]
+    end
+    
+    LDS --> LS[localStorage]
+    LDS --> IDB[IndexedDB]
+    
+    CAI --> TFL[TensorFlow.js]
+    TFL --> PSM[Pre-loaded Models]
+    
+    NAS --> BG[Background Sync]
+    NAS --> SQ[Sync Queue]
+    
+    OFL --> PE[Progressive Enhancement]
+```
 
 - **Adaptive ML Models**: TensorFlow.js models that scale complexity based on device capability
 - **Progressive Web App (PWA)**: Full offline functionality with background sync
 - **Cross-Cultural UX**: Interface elements that adapt to cultural contexts
 - **Voice Recognition**: Multilingual voice commands for accessibility
 - **Data Sovereignty Controls**: Fine-grained sharing permissions respecting OCAP® principles
+
+### Cultural Safety Integration
+
+```mermaid
+graph TD
+    subgraph "Cultural Integration"
+        CI[Cultural Integration]
+        CI --> Lang[Language Support]
+        CI --> TK[Traditional Knowledge]
+        CI --> Design[Cultural Design]
+    end
+    
+    Lang --> UI[UI Translation]
+    Lang --> Voice[Voice Interface]
+    
+    TK --> Medicine[Traditional Medicine]
+    TK --> Practices[Cultural Practices]
+    
+    Design --> Symbols[Indigenous Symbols]
+    Design --> Imagery[Cultural Imagery]
+```
 
 ## 📚 Documentation
 
