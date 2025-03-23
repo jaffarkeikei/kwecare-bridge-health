@@ -168,8 +168,33 @@ class GeminiApiService {
       ? `\nIMPORTANT: Please respond in ${this.getLanguageName(language)} language.` 
       : '';
     
-    // Create a system prompt that includes patient data for context
-    return `
+    // Check if this is provider data (we use the gender field to determine this)
+    if (patientData.gender === "Provider") {
+      // Create a system prompt that includes provider data for context
+      return `
+You are AIDA, an advanced AI assistant for ${patientData.name}, a healthcare provider with ${patientData.age} years of experience, specializing in ${patientData.specialty} at ${patientData.clinic}.
+
+Provider context:
+- Patients (${(patientData as any).patients?.length || 0} total): ${(patientData as any).patients?.map((p: any) => `${p.name} (${p.age}, ${p.conditions.join(', ')})`).join('; ') || 'None'}
+- Recent alerts: ${(patientData as any).recentAlerts?.map((a: any) => `${a.patientName}: ${a.alert} (${a.severity})`).join('; ') || 'None'}
+- Upcoming appointments: ${(patientData as any).upcomingAppointments?.map((a: any) => `${a.patient}: ${a.time} (${a.type})`).join('; ') || 'None'}
+- Performance metrics: Patient satisfaction: ${(patientData as any).performanceMetrics?.patientSatisfaction || 'N/A'}%, Treatment effectiveness: ${(patientData as any).performanceMetrics?.treatmentEffectiveness || 'N/A'}%
+
+Instructions:
+1. Provide accurate, professional healthcare information and insights tailored to a medical provider.
+2. Help the provider analyze patient data, interpret clinical information, and identify treatment patterns.
+3. Offer evidence-based suggestions while recognizing the provider's expertise and decision-making authority.
+4. Maintain a professional, concise tone appropriate for healthcare settings.
+5. Prioritize alerts and information based on clinical significance.
+6. When providing structured information like treatment summaries or patient overviews, use proper formatting:
+   - Use **Section Titles:** for headers (with the colon)
+   - Use * bullet points for lists
+   - Add blank lines between paragraphs
+   - Keep lists consistently formatted for readability${languageInstruction}
+`;
+    } else {
+      // Original patient-focused prompt
+      return `
 You are Dr. AIDA, an advanced AI health assistant for ${patientData.name}, a ${patientData.age}-year-old ${patientData.gender}.
 Patient medical context:
 - Medical conditions: ${patientData.conditions.join(', ')}
@@ -189,6 +214,7 @@ Instructions:
    - Add blank lines between paragraphs
    - Keep lists consistently formatted for readability${languageInstruction}
 `;
+    }
   }
 
   /**
@@ -241,37 +267,262 @@ Instructions:
   }
 
   /**
+   * Helper method to get patient-specific mock response when requested by providers
+   */
+  private getMockPatientDetailResponse(patientName: string, patientData: any): string {
+    // Find the patient in the provider's patient list
+    const patient = patientData.patients?.find((p: any) => 
+      p.name.toLowerCase().includes(patientName.toLowerCase())
+    );
+    
+    if (!patient) {
+      return `I don't have detailed information about a patient named "${patientName}" in your current patient list.`;
+    }
+    
+    // Get relevant alerts for this patient
+    const patientAlerts = patientData.recentAlerts?.filter((a: any) => 
+      a.patientId === patient.id
+    ) || [];
+    
+    // Generate a detailed patient report
+    return `**Patient Summary - ${patient.name}:**
+
+* ${patient.age}-year-old ${patient.gender.toLowerCase()} with ${patient.conditions.join(', ')}
+* Last visit: ${patient.lastVisit}
+* Upcoming appointment: ${patient.upcomingAppointment}
+
+${patientAlerts.length > 0 ? `**Recent Alerts:**\n${patientAlerts.map((a: any) => `* ${a.alert} (${a.severity.toUpperCase()}) - ${a.date}`).join('\n')}` : '**Recent Alerts:** None'}
+
+**Treatment Considerations:**
+* Continue monitoring for complications related to ${patient.conditions[0]}
+* Evaluate medication adherence at next appointment
+* Consider additional screenings based on risk factors
+* Update care plan to address recent clinical findings
+
+**Next Steps:**
+* ${patientAlerts.length > 0 ? 'Address recent alerts as priority items' : 'Routine follow-up at next scheduled appointment'}
+* Review recent lab results and vital trends
+* Assess response to current treatment protocol
+* Document updated recommendations in patient record`;
+  }
+
+  /**
    * Mock response generator for fallback when API fails
    */
   private getMockResponse(userInput: string, patientData: PatientData, language?: string): string {
     const input = userInput.toLowerCase();
-    
-    // Examples of contextual responses based on the patient's data and input
-    let response = '';
-    
-    if (input.includes("diabetes") || input.includes("blood sugar")) {
-      response = `Based on your records, your last blood sugar reading was ${patientData.recentVitals.bloodSugar}. This is slightly elevated from the recommended range for someone with Type 2 Diabetes. Have you been following your medication schedule with Metformin ${patientData.medications[0].dosage} ${patientData.medications[0].frequency}? I can suggest some dietary adjustments that might help bring this under better control.`;
-    } 
-    else if (input.includes("blood pressure") || input.includes("hypertension")) {
-      response = `Your most recent blood pressure reading was ${patientData.recentVitals.bloodPressure}, which is better than your previous readings but still slightly above the target range. The Lisinopril appears to be helping, but we might want to discuss some lifestyle modifications during your upcoming appointment.`;
+
+    // Check if provider is asking about a specific patient
+    if (patientData.gender === "Provider") {
+      // Check if this is a query about a specific patient
+      const patientNames = (patientData as any).patients?.map((p: any) => p.name.toLowerCase()) || [];
+      
+      for (const name of patientNames) {
+        const [firstName, lastName] = name.split(' ');
+        if (input.includes(name) || 
+            (firstName && input.includes(firstName)) || 
+            (lastName && input.includes(lastName))) {
+          // This is a query about a specific patient
+          return this.getMockPatientDetailResponse(name, patientData);
+        }
+      }
+      
+      // Continue with general provider responses
+      if (input.includes('high-risk') || input.includes('urgent') || input.includes('alert')) {
+        return `**Critical Alerts:**
+
+* David Wilson reported increased chest pain 5 hours ago (CRITICAL)
+* David Wilson missed last 3 medication check-ins (HIGH)
+* Sarah Johnson's blood glucose consistently elevated for 5 days (MODERATE)
+
+**Recommended Actions:**
+
+* Contact David Wilson immediately for chest pain assessment
+* Schedule urgent follow-up for medication compliance with David Wilson
+* Review Sarah Johnson's diabetes management plan at tomorrow's appointment`;
+      }
+      
+      if (input.includes('appointment') || input.includes('schedule') || input.includes('today')) {
+        return `**Today's Appointments:**
+
+* 2:30 PM - David Wilson (Virtual Follow-up)
+  * Focus areas: Medication compliance, Recent chest pain reports
+  * Last visit: Feb 28, 2023
+  * Conditions: Coronary Artery Disease, COPD
+
+**Tomorrow's Schedule:**
+
+* 10:00 AM - Sarah Johnson (Virtual Medication Review)
+  * Focus: Diabetes management, Blood glucose readings
+  * Last visit: March 15, 2023
+
+**Notes:**
+* No scheduling conflicts detected
+* 2 telemedicine visits, 0 in-person visits
+* David Wilson's appointment flagged as high-priority due to recent alerts`;
+      }
+      
+      if (input.includes('patient') || input.includes('sarah') || input.includes('johnson')) {
+        return `**Patient Summary - Sarah Johnson:**
+
+* 42-year-old female with Type 2 Diabetes and Hypertension
+* Last visit: March 15, 2023
+* Upcoming appointment: April 22, 2023
+
+**Recent Concerns:**
+* Blood glucose readings consistently elevated (138-165 mg/dL) for 5 days
+* Reported increased fatigue and thirst
+
+**Current Medications:**
+* Metformin 500mg twice daily
+* Lisinopril 10mg once daily
+
+**Treatment Considerations:**
+* Consider adjusting Metformin dosage based on continuous glucose monitoring
+* Review dietary compliance and physical activity levels
+* Evaluate for signs of diabetic complications at next visit`;
+      }
+      
+      if (input.includes('performance') || input.includes('metric') || input.includes('satisfaction')) {
+        return `**Provider Performance Metrics:**
+
+* Patient Satisfaction: 94% (↑2% from last quarter)
+* Treatment Effectiveness: 88% (↑1% from last quarter)
+* Timeliness of Care: 91% (no change)
+* Documentation Completeness: 96% (↑3% from last quarter)
+
+**Strengths:**
+* Patient satisfaction scores in the top 15% of providers
+* Excellent documentation practices
+* Effective chronic disease management protocols
+
+**Areas for Improvement:**
+* Follow-up appointment scheduling timeliness
+* Preventive screening completion rates
+* Virtual care experience ratings`;
+      }
+
+      // Default provider response for other queries
+      return `I don't have specific information about that query in my offline mode. In online mode, I could help you with detailed information about:
+
+* Patient clinical summaries and treatment plans
+* Analysis of patient trends and outcomes
+* Clinical decision support and medication guidance
+* Performance metrics and practice optimizations
+* Documentation assistance and coding support
+
+Would you like information about your upcoming appointments, recent alerts, or specific patients instead?`;
+    } else {
+      // Patient-specific responses (original logic)
+      if (input.includes('blood sugar') || input.includes('glucose') || input.includes('diabetes')) {
+        return `**Managing Your Blood Sugar Levels:**
+
+* Your recent reading of 142 mg/dL is slightly elevated above target range (70-130 mg/dL)
+* Continue taking Metformin 500mg twice daily as prescribed
+
+**Lifestyle Recommendations:**
+* Aim for 30 minutes of walking after meals to help lower glucose spikes
+* Consider replacing refined carbohydrates with whole grains and increasing fiber intake
+* Stay hydrated with at least 8 glasses of water daily
+
+If you experience symptoms like extreme thirst, frequent urination, or unusual fatigue, please contact your healthcare provider right away.`;
+      }
+      
+      if (input.includes('blood pressure') || input.includes('hypertension')) {
+        return `**Managing Your Blood Pressure:**
+
+* Your recent reading of 138/85 is slightly elevated (optimal is below 120/80)
+* Continue taking Lisinopril 10mg daily as prescribed by your doctor
+
+**Lifestyle Management:**
+* Reduce sodium intake to less than 2,300mg daily (about 1 teaspoon of salt)
+* Practice stress reduction techniques like deep breathing or meditation for 10 minutes daily
+* Maintain your exercise routine of at least 150 minutes of moderate activity weekly
+
+Remember to measure your blood pressure at the same time each day and bring your log to your next appointment on April 22nd.`;
+      }
+      
+      if (input.includes('diet') || input.includes('meal') || input.includes('eat')) {
+        return `**Recommended Diet for Your Conditions:**
+
+**Breakfast:**
+* Steel-cut oatmeal with berries and cinnamon (no added sugar)
+* 1-2 boiled eggs for protein
+* Unsweetened tea or coffee
+
+**Lunch:**
+* Grilled chicken or fish (3-4 oz)
+* Large portion of non-starchy vegetables
+* Small serving of whole grains (½ cup brown rice or quinoa)
+* Olive oil and vinegar dressing
+
+**Dinner:**
+* Lean protein such as fish, tofu, or legumes
+* 2 cups of vegetables (roasted, steamed, or in salad)
+* Small serving of complex carbohydrates
+
+**Snacks:**
+* Small handful of nuts
+* Greek yogurt with berries
+* Vegetable sticks with hummus
+
+**Foods to Limit:**
+* Processed foods high in sodium
+* Refined carbohydrates and added sugars
+* Saturated and trans fats`;
+      }
+      
+      if (input.includes('medication') || input.includes('metformin') || input.includes('lisinopril')) {
+        return `**Your Current Medications:**
+
+* Metformin (500mg)
+  * Purpose: Controls blood sugar levels for Type 2 Diabetes
+  * Dosage: Take one tablet twice daily with meals
+  * Common side effects: Stomach upset, diarrhea (usually temporary)
+  * Take with food to minimize digestive discomfort
+
+* Lisinopril (10mg)
+  * Purpose: Lowers blood pressure for Hypertension
+  * Dosage: Take one tablet once daily, typically in the morning
+  * Common side effects: Dry cough, dizziness
+  * Avoid potassium supplements without consulting your doctor
+
+**Important Reminders:**
+* Do not stop taking these medications without consulting your doctor
+* Store medications at room temperature away from moisture
+* Refill your prescriptions at least 5 days before running out
+* Bring all medication bottles to your next appointment on April 22nd`;
+      }
+      
+      if (input.includes('appointment') || input.includes('checkup') || input.includes('visit')) {
+        return `**Upcoming Appointment Information:**
+
+* Date: April 22, 2023
+* Provider: Dr. Rebecca Taylor
+* Type: Regular follow-up and medication review
+* Location: KweCare Health Center, Suite 205
+
+**Preparation:**
+* Bring a list of all current medications and supplements
+* Continue monitoring and recording your blood sugar and blood pressure daily
+* Fast for 8 hours before appointment for lab work
+* Prepare questions about your diabetes management and any new symptoms
+
+Would you like me to set a reminder for your appointment or help you prepare specific questions for your doctor?`;
+      }
+      
+      // Default response for other queries
+      return `I don't have specific information about that query in my offline mode. In online mode, I could provide you with personalized health information based on your medical history.
+
+Based on your conditions of Type 2 Diabetes and Hypertension, I can help with:
+* Blood sugar management strategies
+* Blood pressure control tips
+* Diet and nutrition advice
+* Medication information
+* Exercise recommendations
+
+Would you like information about any of these topics instead?`;
     }
-    else if (input.includes("appointment") || input.includes("visit")) {
-      response = `Based on your records, your next follow-up appointment should be scheduled soon. Your last visit was where we discussed managing your diabetes and hypertension. Is there anything specific you'd like to prepare for your next appointment?`;
-    }
-    else if (input.includes("medication") || input.includes("medicine")) {
-      response = `You're currently taking ${patientData.medications.length} medications: ${patientData.medications.map(med => `${med.name} ${med.dosage} ${med.frequency}`).join(" and ")}. It's important to take these regularly as prescribed. Have you been experiencing any side effects I should know about?`;
-    }
-    else {
-      // General response for other queries
-      response = `Thank you for your question. As your personal health assistant, I'll do my best to help. Based on your health profile, you have a history of ${patientData.conditions.join(" and ")}. Your recent vitals look stable overall. How have you been feeling lately in relation to your question?`;
-    }
-    
-    // If a different language is requested, add note about translation
-    if (language && language !== 'en') {
-      response += `\n\n[Note: This is a mock response. In production, this would be provided in ${this.getLanguageName(language)}.]`;
-    }
-    
-    return response;
   }
 }
 

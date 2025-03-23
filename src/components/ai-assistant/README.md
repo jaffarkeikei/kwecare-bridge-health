@@ -1,20 +1,23 @@
-# KweCare AI Doctor Assistant
+# KweCare AI Health Assistants
 
-This module implements a personalized AI health assistant that provides patients with tailored medical advice based on their health records and personal information.
+This module implements personalized AI health assistants that provide patients and healthcare providers with tailored medical information based on their specific contexts.
 
 ## Features
 
 - **Personalized Health Advice**: Uses patient-specific data to provide contextual responses
-- **Chat Interface**: Natural conversational interface for patients to ask health questions
+- **Provider Clinical Support**: Offers healthcare providers insights on patient data and clinical alerts
+- **Chat Interface**: Natural conversational interface for interacting with the AI assistants
 - **Google Gemini Integration**: Powered by Google's Gemini AI for advanced language understanding
 - **Cultural Sensitivity**: Designed to respect cultural preferences and contexts
-- **Medical Record Integration**: Access to patient records for informed responses
+- **Medical Record Integration**: Access to patient and provider records for informed responses
 
 ## Components
 
-### 1. PersonalDoctorButton
+### Patient-Facing Components
 
-A UI component that displays the AI Doctor button in the header and manages the modal state.
+#### 1. PersonalDoctorButton
+
+A UI component that displays the AI Doctor button for patients and manages the modal state.
 
 ```tsx
 import { PersonalDoctorButton } from "@/components/ai-assistant";
@@ -23,9 +26,9 @@ import { PersonalDoctorButton } from "@/components/ai-assistant";
 <PersonalDoctorButton />
 ```
 
-### 2. PersonalDoctorAI
+#### 2. PersonalDoctorAI
 
-The main dialog component that displays the chat interface and handles user interactions.
+The main dialog component that displays the chat interface for patients and handles user interactions.
 
 ```tsx
 import { PersonalDoctorAI } from "@/components/ai-assistant";
@@ -37,7 +40,36 @@ import { PersonalDoctorAI } from "@/components/ai-assistant";
 />
 ```
 
-### 3. GeminiApiService
+### Provider-Facing Components
+
+#### 1. ProviderAssistantButton
+
+A UI component that displays the AI Assistant button for healthcare providers and manages the modal state.
+
+```tsx
+import { ProviderAssistantButton } from "@/components/ai-assistant";
+
+// In your component
+<ProviderAssistantButton />
+```
+
+#### 2. ProviderAssistantAI
+
+The main dialog component that displays the chat interface for healthcare providers with provider-specific context.
+
+```tsx
+import { ProviderAssistantAI } from "@/components/ai-assistant";
+
+// In your component
+<ProviderAssistantAI 
+  isOpen={isOpen} 
+  onClose={() => setIsOpen(false)} 
+/>
+```
+
+### Shared Services
+
+#### GeminiApiService
 
 Service for interfacing with Google's Gemini API with context-aware prompting.
 
@@ -47,13 +79,13 @@ import { geminiApiService } from "@/components/ai-assistant";
 // Initialize the service with your API key
 geminiApiService.initialize({ 
   apiKey: 'YOUR_GEMINI_API_KEY',
-  modelVersion: 'gemini-1.5-pro'
+  modelVersion: 'gemini-2.0-flash'
 });
 
 // Generate response
 const response = await geminiApiService.generateResponse(
   messages,
-  patientData,
+  contextData, // Either patient or provider data
   { temperature: 0.7 }
 );
 ```
@@ -74,30 +106,52 @@ geminiApiService.initialize({
 });
 ```
 
-### 2. Customizing the AI Doctor
+### 2. Adding the AI Assistants to your application
 
-The AI Doctor can be customized with different personalities or specialties:
+#### For Patient UI:
 
 ```tsx
-// In PersonalDoctorAI.tsx
-const doctorName = "Dr. AIDA"; // Change to your preferred name
-const doctorPersonality = "compassionate, knowledgeable, and culturally aware";
+// In your header or navigation component
+<PersonalDoctorButton className="ml-2" />
 ```
 
-### 3. Integrating with Patient Records
-
-For full functionality, integrate with your patient record system:
+#### For Provider UI:
 
 ```tsx
-// Replace mockPatientData with real patient data from your backend
+// In your provider dashboard or navigation component
+<ProviderAssistantButton className="ml-2" />
+```
+
+### 3. Integrating with Record Systems
+
+For full functionality, integrate with your patient and provider record systems:
+
+```tsx
+// Replace mock data with real data from your backend
 const patientData = await fetchPatientData(patientId);
+const providerData = await fetchProviderData(providerId);
 ```
+
+## Differences Between AI Doctor and Provider Assistant
+
+1. **AI Doctor (Patient-Facing)**
+   - Focuses on personal health advice and education
+   - Uses patient-friendly language and explanations
+   - Emphasizes lifestyle guidance and medication adherence
+   - Features a warm, empathetic tone
+
+2. **Provider Assistant (Healthcare Provider-Facing)**
+   - Focuses on clinical insights and patient management
+   - Uses professional medical terminology
+   - Emphasizes clinical alerts, treatment patterns, and outcomes
+   - Features a professional, efficient tone
+   - Includes provider performance metrics and analysis
 
 ## Best Practices
 
-1. **Privacy**: Ensure all patient data is handled securely and with proper consent
-2. **Transparency**: Clearly communicate to patients that they are interacting with an AI
-3. **Human Oversight**: Include a mechanism for escalating to human healthcare providers when needed
+1. **Privacy**: Ensure all data is handled securely and with proper consent
+2. **Transparency**: Clearly communicate that users are interacting with an AI
+3. **Human Oversight**: Include a mechanism for escalating to human staff when needed
 4. **Accuracy**: Regularly review and update the AI responses for medical accuracy
 5. **Cultural Context**: Ensure the AI is trained on diverse cultural health practices
 

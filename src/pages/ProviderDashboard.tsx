@@ -72,6 +72,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter } from "@/components/ui/dialog";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import { ProviderAssistantButton } from "@/components/ai-assistant";
 
 type ProviderTab = "dashboard" | "patients" | "appointments" | "records" | "analytics" | "messages";
 
@@ -2487,6 +2488,7 @@ const ProviderDashboard = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              <ProviderAssistantButton className="mr-2" />
               <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 px-3 py-1 text-sm">
                 Provider Mode
               </Badge>

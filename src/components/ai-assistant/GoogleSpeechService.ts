@@ -103,6 +103,12 @@ class GoogleSpeechService {
       // Stop any ongoing speech
       this.stopSpeaking();
       
+      // Validate voiceType to prevent "gender neutral voices not supported" error
+      if (voiceType !== 'male' && voiceType !== 'female') {
+        console.warn(`Invalid voice type "${voiceType}". Defaulting to "female".`);
+        voiceType = 'female';
+      }
+      
       // If fallback only is set, skip Google TTS entirely
       if (this.useFallbackOnly) {
         console.log("Using browser speech synthesis (fallback mode enabled)");
@@ -110,7 +116,7 @@ class GoogleSpeechService {
         return;
       }
       
-      console.log(`Using Google Cloud Text-to-Speech API in language: ${language}`);
+      console.log(`Using Google Cloud Text-to-Speech API in language: ${language} with ${voiceType} voice`);
       
       // First check if the server is accessible
       try {
@@ -236,6 +242,12 @@ class GoogleSpeechService {
   // Fallback method using browser's speech synthesis
   private fallbackToLocalSpeech(text: string, voiceType: string, language: string = 'en'): void {
     try {
+      // Validate voiceType
+      if (voiceType !== 'male' && voiceType !== 'female') {
+        console.warn(`Invalid voice type "${voiceType}" for speech synthesis. Defaulting to "female".`);
+        voiceType = 'female';
+      }
+
       const utterance = new SpeechSynthesisUtterance(text);
       
       // Set the language
