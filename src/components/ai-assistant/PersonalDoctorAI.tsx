@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { Bot, User, Send, X, Loader2, Brain, History, Activity, FileHeart, Sparkles, Mic, Volume2, VolumeX } from "lucide-react";
+import { Bot, User, Send, X, Loader2, Brain, History, Activity, FileHeart, Sparkles, Mic, Volume2, VolumeX, Headphones, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -174,6 +174,7 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   const [typingIndex, setTypingIndex] = useState(0);
   const [currentSpeakingMessageId, setCurrentSpeakingMessageId] = useState<string | null>(null);
   const [voicePersona, setVoicePersona] = useState<string>("female"); // Options: female, male, neutral
+  const [isMuted, setIsMuted] = useState(false);
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -533,9 +534,29 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     }
   };
   
+  // Function to toggle mute
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    
+    if (!isMuted) {
+      // If we're unmuting, stop any ongoing speech
+      stopSpeaking();
+    }
+  };
+  
+  // Function to toggle voice selector
+  const toggleVoiceSelector = () => {
+    setShowVoiceSelector(!showVoiceSelector);
+  };
+  
   // Function to speak text
   const speakText = async (text: string, messageId: string) => {
     try {
+      // If muted, don't speak
+      if (isMuted) {
+        return;
+      }
+      
       // Cancel any ongoing speech
       if (isSpeaking) {
         stopSpeaking();
@@ -656,9 +677,11 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
       
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Speak the response
-      const plainTextResponse = aiResponse.replace(/<[^>]*>/g, ''); // Remove HTML tags
-      speakText(plainTextResponse, assistantMessage.id);
+      // Auto-speak the response if not muted
+      if (!isMuted) {
+        const plainTextResponse = aiResponse.replace(/<[^>]*>/g, ''); // Remove HTML tags
+        speakText(plainTextResponse, assistantMessage.id);
+      }
       
     } catch (error) {
       console.error("Error generating AI response:", error);
@@ -775,16 +798,13 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
     }, 100);
   };
 
-  // Add a new function to handle user-initiated speech (required by browsers)
-  const handleVoiceButtonClick = () => {
-    // Toggle voice selector visibility
-    setShowVoiceSelector(prev => !prev);
-    
-    // If there are assistant messages, speak the last one
+  // Function to play the last assistant message
+  const playLastAssistantMessage = () => {
     const assistantMessages = messages.filter(msg => msg.role === 'assistant');
     if (assistantMessages.length > 0) {
       const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
-      speakText(lastAssistantMessage.content, lastAssistantMessage.id);
+      const plainTextResponse = lastAssistantMessage.content.replace(/<[^>]*>/g, '');
+      speakText(plainTextResponse, lastAssistantMessage.id);
     }
   };
 
@@ -819,13 +839,87 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
                 <p className="text-xs text-muted-foreground">Personal Health Assistant</p>
                 <Badge variant="outline" className="ml-1 bg-primary/5 text-[10px] py-0 px-1 font-semibold">
                   <Volume2 className="h-2 w-2 mr-0.5" />
-                  Chirp HD
+                  {googleSpeechService.isApiEnabled() ? "Google Neural2" : "Browser TTS"}
                 </Badge>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isSpeaking ? (
+            {/* Voice Selection Button */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleVoiceSelector}
+                className="text-primary border-primary/30 h-8 w-8"
+                aria-label="Select voice"
+                title="Select voice"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+              
+              {/* Voice selector dropdown */}
+              {showVoiceSelector && (
+                <div className="absolute right-0 mt-1 w-48 bg-card rounded-md shadow-lg border border-border z-50">
+                  <div className="p-1 text-xs font-medium text-muted-foreground flex items-center">
+                    <SparklesIcon className="h-3 w-3 mr-1 text-primary" />
+                    <span>Voice Selection</span>
+                  </div>
+                  <div className="px-1 pb-1">
+                    <Button
+                      variant={voicePersona === "female" ? "default" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start text-xs"
+                      onClick={() => {
+                        setVoicePersona("female");
+                        setShowVoiceSelector(false);
+                      }}
+                    >
+                      Female Voice
+                    </Button>
+                    <Button
+                      variant={voicePersona === "male" ? "default" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start text-xs"
+                      onClick={() => {
+                        setVoicePersona("male");
+                        setShowVoiceSelector(false);
+                      }}
+                    >
+                      Male Voice
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Play Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={playLastAssistantMessage}
+              className="text-primary border-primary/30 h-8 w-8"
+              aria-label="Play last message"
+              title="Play last message"
+              disabled={!messages.some(msg => msg.role === 'assistant') || isMuted || isSpeaking}
+            >
+              <Headphones className="h-4 w-4" />
+            </Button>
+            
+            {/* Mute/Unmute Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleMute}
+              className="text-primary border-primary/30 h-8 w-8"
+              aria-label={isMuted ? "Unmute" : "Mute"}
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
+            
+            {/* Play/Stop Button when speaking */}
+            {isSpeaking && (
               <Button
                 variant="outline"
                 size="icon"
@@ -836,67 +930,9 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
               >
                 <VolumeX className="h-4 w-4" />
               </Button>
-            ) : (
-              <>
-                <div className="relative group">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleVoiceButtonClick}
-                    className="text-primary border-primary/30 h-8 w-8"
-                    aria-label="Read last response"
-                    title="Read with current voice"
-                    disabled={!messages.some(msg => msg.role === 'assistant')}
-                  >
-                    <Volume2 className="h-4 w-4" />
-                  </Button>
-                  
-                  {/* Voice selector dropdown that appears on click */}
-                  {showVoiceSelector && (
-                    <div className="absolute right-0 mt-1 w-48 bg-card rounded-md shadow-lg border border-border z-50">
-                      <div className="p-1 text-xs font-medium text-muted-foreground flex items-center">
-                        <SparklesIcon className="h-3 w-3 mr-1 text-primary" />
-                        <span>Google Neural2 HD Voice</span>
-                      </div>
-                      <div className="px-1 pb-1">
-                        <Button
-                          variant={voicePersona === "female" ? "default" : "ghost"}
-                          size="sm"
-                          className="w-full justify-start text-xs"
-                          onClick={() => {
-                            setVoicePersona("female");
-                            // Immediately try the voice
-                            setTimeout(() => {
-                              const silence = new SpeechSynthesisUtterance('');
-                              silence.volume = 0;
-                              window.speechSynthesis.speak(silence);
-                            }, 100);
-                          }}
-                        >
-                          Female (Neural2 HD)
-                        </Button>
-                        <Button
-                          variant={voicePersona === "male" ? "default" : "ghost"}
-                          size="sm"
-                          className="w-full justify-start text-xs"
-                          onClick={() => {
-                            setVoicePersona("male");
-                            // Immediately try the voice
-                            setTimeout(() => {
-                              const silence = new SpeechSynthesisUtterance('');
-                              silence.volume = 0;
-                              window.speechSynthesis.speak(silence);
-                            }, 100);
-                          }}
-                        >
-                          Male (Neural2 HD)
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
             )}
+            
+            {/* Close Button */}
             <Button 
               variant="ghost" 
               size="icon" 

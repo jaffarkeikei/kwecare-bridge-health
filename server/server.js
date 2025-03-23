@@ -103,7 +103,7 @@ app.post('/api/tts', async (req, res) => {
     // If API is already known to be disabled, use fallback immediately
     if (!apiEnabled) {
       await synthesizeSpeechFallback(text, outputFile);
-      const audioUrl = `/public/${fileName}`;
+      const audioUrl = `/api/audio/${fileName}`;
       return res.json({ 
         audioUrl,
         fallback: true,
@@ -132,7 +132,7 @@ app.post('/api/tts', async (req, res) => {
       fs.writeFileSync(outputFile, response.audioContent, 'binary');
       
       // Return the URL to the audio file
-      const audioUrl = `/public/${fileName}`;
+      const audioUrl = `/api/audio/${fileName}`;
       console.log(`Generated audio file: ${audioUrl}`);
       
       res.json({ audioUrl });
@@ -146,7 +146,7 @@ app.post('/api/tts', async (req, res) => {
         
         // Use fallback synthesis
         await synthesizeSpeechFallback(text, outputFile);
-        const audioUrl = `/public/${fileName}`;
+        const audioUrl = `/api/audio/${fileName}`;
         return res.json({ 
           audioUrl, 
           fallback: true,
@@ -163,8 +163,21 @@ app.post('/api/tts', async (req, res) => {
   }
 });
 
-// Serve static files from the public directory
+// Serve static files from the public directory under a dedicated route
 app.use('/public', express.static(path.join(__dirname, 'public')));
+
+// Add a dedicated route for audio files to make paths consistent
+app.get('/api/audio/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'public', filename);
+  
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('Audio file not found');
+  }
+});
 
 // Add a middleware to handle CORS preflight requests for all routes
 app.options('*', cors());

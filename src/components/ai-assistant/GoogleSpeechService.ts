@@ -10,7 +10,8 @@ class GoogleSpeechService {
   private isSpeaking = false;
   private speakingAudio: HTMLAudioElement | null = null;
   private backendUrl: string;
-  private useFallbackOnly = true; // Always use browser speech for now until Google Cloud is enabled
+  private useFallbackOnly = false; // Default to use Google TTS, only fallback if needed
+  private apiEnabled = true; // Assume API is enabled until proven otherwise
 
   constructor() {
     // Get port from environment variable or use default 3002
@@ -23,7 +24,35 @@ class GoogleSpeechService {
     this.keyFilePath = keyFilePath;
     this.isInitialized = true;
     console.log('Google Speech-to-Text API configured with key file path');
+    
+    // Test the TTS server connection
+    this.testServerConnection();
+    
     return true;
+  }
+  
+  // Test the TTS server connection
+  async testServerConnection() {
+    try {
+      const testResponse = await fetch(`${this.backendUrl}/api/status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors'
+      });
+      
+      if (testResponse.ok) {
+        const data = await testResponse.json();
+        this.apiEnabled = data.apiEnabled;
+        console.log(`TTS server connection test successful. API enabled: ${this.apiEnabled}`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('TTS server connection test failed:', error);
+      return false;
+    }
   }
 
   isApiInitialized() {
@@ -81,7 +110,7 @@ class GoogleSpeechService {
         return;
       }
       
-      console.log("Using real Google Cloud Text-to-Speech API");
+      console.log("Using Google Cloud Text-to-Speech API");
       
       // First check if the server is accessible
       try {
@@ -135,6 +164,7 @@ class GoogleSpeechService {
           console.warn("Google Cloud Text-to-Speech API not enabled. Enable it at https://console.developers.google.com/apis/api/texttospeech.googleapis.com/overview");
           // Set fallback mode automatically after encountering this error
           this.useFallbackOnly = true;
+          this.apiEnabled = false;
         }
         
         throw new Error(`Failed to get speech: ${errorData.error}`);
@@ -142,6 +172,16 @@ class GoogleSpeechService {
       
       // Get the audio URL from the response
       const data = await response.json();
+      
+      // Check if the response indicates fallback mode
+      if (data.fallback) {
+        console.log("Server responded with fallback mode. Using browser speech.");
+        this.useFallbackOnly = true;
+        this.apiEnabled = false;
+        this.fallbackToLocalSpeech(text, voiceType);
+        return;
+      }
+      
       const audioUrl = `${this.backendUrl}${data.audioUrl}`;
       console.log("Received audio URL:", audioUrl);
       
@@ -181,6 +221,11 @@ class GoogleSpeechService {
   setUseFallbackOnly(useFallback: boolean): void {
     this.useFallbackOnly = useFallback;
     console.log(`Speech synthesis fallback mode ${useFallback ? 'enabled' : 'disabled'}`);
+  }
+  
+  // Check if the API is enabled
+  isApiEnabled(): boolean {
+    return this.apiEnabled;
   }
   
   // Fallback method using browser's speech synthesis
