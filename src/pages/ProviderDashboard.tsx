@@ -926,7 +926,7 @@ const ProviderDashboard = () => {
                             <Eye className="h-4 w-4" />
                             <span className="hidden sm:inline">Preview Report</span>
                           </Button>
-                          <Button variant="default" size="sm" className="gap-1 bg-kwecare-primary hover:bg-kwecare-primary/90" onClick={() => generatePatientReport(patient)}>
+                          <Button variant="default" size="sm" className="gap-1 bg-kwecare-primary hover:bg-kwecare-primary/90" onClick={() => generatePatientReportPDF(patient)}>
                             <FileOutput className="h-4 w-4" />
                             <span className="hidden sm:inline">Generate Report</span>
                           </Button>
@@ -1654,30 +1654,21 @@ const ProviderDashboard = () => {
       // Reset the element style on error
       element.style.display = originalDisplay;
       element.style.position = originalPosition;
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save(filename);
-      
-      toast.dismiss();
-      toast.success("PDF downloaded successfully");
-    }).catch(err => {
-      console.error("Error generating PDF:", err);
-      toast.dismiss();
-      toast.error("Error generating PDF");
-      
-      // Reset the element style on error
-      element.style.display = originalDisplay;
-      element.style.position = originalPosition;
       element.style.zIndex = originalZIndex;
       element.style.opacity = originalOpacity;
+      element.style.width = originalWidth;
+      element.style.height = originalHeight;
+      element.style.overflow = originalOverflow;
+      element.style.visibility = originalVisibility;
+      element.style.left = originalLeft;
     });
   };
 
   const generatePatientReport = (patient: (typeof patients)[0]) => {
     setSelectedPatientForReport(patient);
-    setPatientReportModalOpen(true);
-    setGeneratingPatientReport(true);
+    toast.loading("Generating comprehensive patient report...");
     
-    // Simulate API call and AI processing time
+    // Simulate API call and AI processing time (would be a real API call in production)
     setTimeout(() => {
       // Generate mock data for the patient report
       const vitalsTrend = [
@@ -1800,8 +1791,719 @@ const ProviderDashboard = () => {
         aiNotes
       });
       
+      // Open patient report dialog and set content as ready
+      setPatientReportModalOpen(true);
       setGeneratingPatientReport(false);
-    }, 3000);
+      
+      // Let the DOM update with the content before generating PDF
+      setTimeout(() => {
+        handleDownloadAsPdf("patient-report-content", `patient-report-${patient.name.replace(/\s+/g, '-').toLowerCase()}.pdf`, false);
+      }, 500);
+    }, 1500);
+  };
+
+  // Add this at the end of your component, right before the return statement
+  // Create a hidden element for the analytics report content that will be used for PDF generation
+  const renderHiddenReportContent = () => {
+    if (!pdfContentReady || !reportData) return null;
+    
+    return (
+      <div id="analytics-report-content" style={{ position: 'absolute', left: '-9999px', width: '800px' }}>
+        <div style={{ padding: '40px', background: 'white', color: 'black' }}>
+          <div style={{ borderBottom: '1px solid #ccc', paddingBottom: '20px', marginBottom: '20px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>KweCare Healthcare Analytics Report</h1>
+            <p style={{ fontSize: '14px', color: '#666' }}>
+              Generated on {new Date().toLocaleDateString()} by Dr. Rebecca Taylor
+            </p>
+            <p style={{ fontSize: '14px', color: '#666' }}>
+              Timeframe: {analyticsTimeframe === 'month' ? 'Last Month' : 
+                        analyticsTimeframe === 'quarter' ? 'Last Quarter' : 
+                        analyticsTimeframe === 'year' ? 'Last Year' : 'All Time'}
+            </p>
+            <p style={{ fontSize: '14px', color: '#666' }}>
+              Community Filter: {analyticsFilter === 'all' ? 'All Communities' : analyticsFilter}
+            </p>
+          </div>
+          
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>Population Health Summary</h2>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ width: '30%', border: '1px solid #e2e8f0', borderRadius: '5px', padding: '15px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>Total Patients</h3>
+                <p style={{ fontSize: '22px', fontWeight: 'bold' }}>128</p>
+                <p style={{ fontSize: '12px', color: '#16a34a' }}>↑ 12% from previous {analyticsTimeframe}</p>
+              </div>
+              
+              <div style={{ width: '30%', border: '1px solid #e2e8f0', borderRadius: '5px', padding: '15px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>Appointment Adherence</h3>
+                <p style={{ fontSize: '22px', fontWeight: 'bold' }}>82%</p>
+                <p style={{ fontSize: '12px', color: '#16a34a' }}>↑ 5% from previous {analyticsTimeframe}</p>
+              </div>
+              
+              <div style={{ width: '30%', border: '1px solid #e2e8f0', borderRadius: '5px', padding: '15px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>Traditional Knowledge Integration</h3>
+                <p style={{ fontSize: '22px', fontWeight: 'bold' }}>65%</p>
+                <p style={{ fontSize: '12px', color: '#16a34a' }}>↑ 15% from previous {analyticsTimeframe}</p>
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>Condition Prevalence</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Condition</th>
+                    <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Patients (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {conditionPrevalence.map((condition, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '8px' }}>{condition.name}</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>{condition.value}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>Community Engagement & Adherence</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Community</th>
+                    <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Engagement (%)</th>
+                    <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Adherence (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {communityEngagement.map((community, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '8px' }}>{community.name}</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>{community.engagement}%</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>{community.adherence}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>Treatment Outcomes</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Condition</th>
+                    <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Improved (%)</th>
+                    <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Stable (%)</th>
+                    <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Deteriorated (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {treatmentOutcomes.map((outcome, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '8px' }}>{outcome.name}</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#16a34a' }}>{outcome.improved}%</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#ca8a04' }}>{outcome.stable}%</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626' }}>{outcome.deteriorated}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '15px', display: 'flex', alignItems: 'center' }}>
+              AI-Generated Recommendations
+            </h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              {reportData.recommendations.map((rec, i) => (
+                <div key={i} style={{ 
+                  border: '1px solid #e2e8f0', 
+                  borderLeft: `4px solid ${rec.impact === 'high' ? '#dc2626' : '#f59e0b'}`, 
+                  borderRadius: '5px', 
+                  padding: '15px',
+                  marginBottom: '15px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 'bold' }}>{rec.category}</h3>
+                    <span style={{ 
+                      display: 'inline-block',
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      borderRadius: '9999px',
+                      background: rec.impact === 'high' ? '#fee2e2' : '#fef3c7',
+                      color: rec.impact === 'high' ? '#dc2626' : '#d97706'
+                    }}>
+                      {rec.impact === 'high' ? 'High Impact' : 'Medium Impact'}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '14px', marginBottom: '10px' }}>{rec.recommendation}</p>
+                  <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '5px', fontSize: '12px', color: '#64748b' }}>
+                    <strong>Evidence:</strong> {rec.evidence}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '15px', display: 'flex', alignItems: 'center' }}>
+              Suggested Next Steps
+            </h2>
+            
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Action Item</th>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Timeline</th>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Resources Needed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.nextSteps.map((step, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px' }}>{step.step}</td>
+                    <td style={{ padding: '8px' }}>{step.timeline}</td>
+                    <td style={{ padding: '8px' }}>{step.resources}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          <div style={{ 
+            background: '#eff6ff', 
+            padding: '15px', 
+            borderRadius: '5px', 
+            marginBottom: '20px',
+            fontSize: '14px',
+            color: '#1e40af'
+          }}>
+            <p>
+              <strong>Note:</strong> This report is generated using AI analysis of health data trends. 
+              Always use clinical judgment when implementing recommendations.
+              Recommendations are based on detected patterns in your patient population data.
+            </p>
+          </div>
+          
+          <div style={{ 
+            borderTop: '1px solid #ccc', 
+            paddingTop: '20px', 
+            fontSize: '12px', 
+            color: '#64748b',
+            textAlign: 'center'
+          }}>
+            <p>KweCare Healthcare Provider Platform</p>
+            <p>Confidential Report - For Medical Professional Use Only</p>
+            <p>Generated: {new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add the handleDownloadReport function that was removed
+  const handleDownloadReport = () => {
+    if (!reportData) return;
+    
+    // For PDF output - call our PDF generator function
+    handleDownloadAsPdf("analytics-report-content", `kwecare-analytics-report-${new Date().toISOString().split('T')[0]}.pdf`, false);
+  };
+
+  // Add a dedicated function for patient report PDF generation
+  const generatePatientReportPDF = (patient: (typeof patients)[0]) => {
+    setSelectedPatientForReport(patient);
+    toast.loading("Generating comprehensive patient report PDF...");
+    
+    // Simulate API call and AI processing time
+    setTimeout(() => {
+      // Generate the same mock data as in generatePatientReport
+      const vitalsTrend = [
+        { date: '2023-06-01', heartRate: 72, bloodPressure: '120/80', bloodGlucose: 98 },
+        { date: '2023-07-01', heartRate: 75, bloodPressure: '122/82', bloodGlucose: 102 },
+        { date: '2023-08-01', heartRate: 73, bloodPressure: '118/79', bloodGlucose: 95 },
+        { date: '2023-09-01', heartRate: 76, bloodPressure: '125/85', bloodGlucose: 108 },
+        { date: '2023-10-01', heartRate: 71, bloodPressure: '119/78', bloodGlucose: 97 },
+        { date: '2023-11-01', heartRate: 74, bloodPressure: '121/81', bloodGlucose: 104 },
+      ];
+      
+      const medicationAdherence = patient.adherence === "excellent" ? 95 : 
+                                 patient.adherence === "good" ? 85 : 
+                                 patient.adherence === "moderate" ? 75 : 60;
+      
+      const communityInsights = [
+        `${patient.name} is from the ${patient.community} community, which has a ${
+          communityHealthData.find(c => c.community.includes(patient.community.split(' ')[0]))?.diabetesRate || 10
+        }% diabetes prevalence rate.`,
+        `Traditional medicine practices are commonly used in ${patient.community} for managing chronic conditions.`,
+        `${patient.community} has a strong cultural emphasis on community-based healing approaches.`,
+        `Language preferences: Traditional ${patient.community.split(' ')[0]} language may be preferred for discussing health concepts.`
+      ];
+      
+      const culturalConsiderations = [
+        "Include traditional knowledge keepers in treatment discussions when appropriate",
+        "Consider seasonal traditional activities when scheduling follow-ups",
+        "Respect communal decision-making processes for major treatment decisions",
+        "Incorporate traditional dietary considerations into nutritional guidance"
+      ];
+      
+      const treatmentRecommendations = patient.conditions.map(condition => {
+        let recommendation = "";
+        let evidence = "";
+        let confidence = 0;
+        
+        if (condition === "Diabetes Type 2") {
+          recommendation = "Consider integrated approach combining traditional dietary practices with standard medication. Recent studies show improved outcomes when traditional foods are incorporated into dietary plans for Indigenous patients with T2D.";
+          evidence = "Blood glucose trends indicate potential benefit from adjusted medication schedule and traditional medicine integration";
+          confidence = 87;
+        } else if (condition === "Hypertension") {
+          recommendation = "Current medication appears effective, but consider stress reduction techniques culturally appropriate for the patient's community background.";
+          evidence = "Recent blood pressure readings show improvement but with fluctuations coinciding with reported stress periods";
+          confidence = 92;
+        } else if (condition === "Heart Disease") {
+          recommendation = "Cardiac rehabilitation should be modified to account for traditional activities. Consider virtual monitoring options given patient's remote location.";
+          evidence = "Patient reported difficulty adhering to standard exercise regimen but engages regularly in traditional physical activities";
+          confidence = 85;
+        } else if (condition === "Arthritis") {
+          recommendation = "Traditional anti-inflammatory preparations have shown promising results when used alongside conventional treatments. Consider consulting with community elder for appropriate protocols.";
+          evidence = "Self-reported pain scores show improvement when traditional remedies are used as supplement";
+          confidence = 78;
+        } else if (condition === "Chronic Pain") {
+          recommendation = "Holistic pain management approach recommended, incorporating both pharmacological and traditional approaches. Virtual check-ins should be increased to weekly.";
+          evidence = "Pain diary indicates correlation between traditional medicine usage and reduced pain scores";
+          confidence = 81;
+        } else if (condition === "Asthma") {
+          recommendation = "Consider seasonal factors in treatment plan. Traditional respiratory treatments may complement conventional inhalers during high-risk seasons.";
+          evidence = "Symptom frequency shows seasonal patterns aligned with traditional ecological knowledge";
+          confidence = 89;
+        } else if (condition === "Pregnancy") {
+          recommendation = "Integrate traditional midwifery knowledge where appropriate. Schedule additional cultural support sessions during prenatal care.";
+          evidence = "Patient has expressed interest in traditional birthing practices alongside modern medical care";
+          confidence = 94;
+        } else if (condition === "Anemia") {
+          recommendation = "Traditional iron-rich food sources should be incorporated into nutritional guidance alongside supplements.";
+          evidence = "Previous response to combined traditional/conventional approach was positive";
+          confidence = 83;
+        } else if (condition === "Anxiety") {
+          recommendation = "Community-based healing circles have shown strong results for this patient. Continue supporting participation alongside conventional therapy.";
+          evidence = "Self-reported anxiety scores show marked improvement following community healing sessions";
+          confidence = 90;
+        } else {
+          recommendation = "Consider cultural context when developing treatment plans. Consult with traditional knowledge keepers from patient's community.";
+          evidence = "General best practice for culturally appropriate care";
+          confidence = 75;
+        }
+        
+        return {
+          condition,
+          recommendation,
+          evidence,
+          confidence
+        };
+      });
+      
+      const aiNotes = `${patient.name}'s health data indicates ${
+        patient.status === "stable" ? "a stable condition with consistent management" :
+        patient.status === "improving" ? "improvement in key health indicators" :
+        patient.status === "monitoring" ? "a condition requiring careful monitoring" :
+        "deteriorating indicators requiring prompt intervention"
+      }. ${
+        patient.adherence === "excellent" ? "Medication adherence is excellent, suggesting strong engagement with treatment plan." :
+        patient.adherence === "good" ? "Medication adherence is good, though occasional lapses are noted." :
+        patient.adherence === "moderate" ? "Moderate medication adherence suggests barriers that should be addressed." :
+        "Poor medication adherence indicates significant barriers to treatment that require immediate attention."
+      }
+      
+      Cultural context analysis indicates that ${patient.name}'s connection to ${patient.community} traditions may offer unique opportunities for treatment integration. ${
+        patient.alerts > 0 ? `The ${patient.alerts} current alert(s) should be addressed as a priority.` : "No current alerts suggest this is an appropriate time for treatment plan review and adjustment."
+      }
+      
+      Comparing ${patient.name}'s health trajectory with similar demographic profiles suggests ${
+        patient.status === "improving" ? "continued improvement with current approach" :
+        patient.status === "stable" ? "maintenance of stability with potential for optimization" :
+        patient.status === "monitoring" ? "vigilant monitoring with potential need for adjustment" :
+        "intervention to address declining health indicators"
+      }. Consider scheduling follow-up within ${
+        patient.status === "deteriorating" ? "7" :
+        patient.status === "monitoring" ? "14" :
+        "30"
+      } days.`;
+      
+      setPatientReportData({
+        vitalsTrend,
+        medicationAdherence,
+        communityInsights,
+        culturalConsiderations,
+        treatmentRecommendations,
+        aiNotes
+      });
+      
+      // Create and generate PDF directly without using the dialog
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // PDF styling and content
+      // Helper functions for repeated styling elements
+      const addHeader = (text: string, y: number, fontSize: number = 18) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(fontSize);
+        pdf.setTextColor(44, 62, 80);
+        pdf.text(text, 20, y);
+        pdf.setDrawColor(52, 152, 219);
+        pdf.setLineWidth(0.5);
+        pdf.line(20, y + 1, 190, y + 1);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        pdf.setTextColor(0, 0, 0);
+        return y + 8;
+      };
+      
+      const addSubheader = (text: string, y: number) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(14);
+        pdf.setTextColor(52, 73, 94);
+        pdf.text(text, 20, y);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        pdf.setTextColor(0, 0, 0);
+        return y + 6;
+      };
+      
+      const addParagraph = (text: string, y: number) => {
+        const splitText = pdf.splitTextToSize(text, 170);
+        pdf.text(splitText, 20, y);
+        return y + (splitText.length * 6);
+      };
+      
+      // Add a new page with proper headers
+      const addNewPage = () => {
+        pdf.addPage();
+        pdf.setFillColor(52, 152, 219);
+        pdf.rect(0, 0, 210, 15, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(10);
+        pdf.text(`KweCare Patient Report - ${patient.name}`, 105, 10, { align: 'center' as "center" });
+        pdf.setTextColor(0, 0, 0);
+        return 30;
+      };
+      
+      // Document title and header
+      pdf.setFillColor(52, 152, 219);
+      pdf.rect(0, 0, 210, 30, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(22);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('KweCare Healthcare', 105, 15, { align: 'center' as "center" });
+      pdf.setFontSize(16);
+      pdf.text('Comprehensive Patient Report', 105, 22, { align: 'center' as "center" });
+      
+      // Patient info section
+      pdf.setFillColor(240, 240, 240);
+      pdf.rect(0, 30, 210, 40, 'F');
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.setTextColor(44, 62, 80);
+      pdf.text(patient.name, 20, 40);
+      
+      // Status color bar
+      const statusColor = patient.status === "stable" ? [16, 185, 129] : 
+                         patient.status === "improving" ? [59, 130, 246] : 
+                         patient.status === "monitoring" ? [245, 158, 11] : 
+                         [239, 68, 68];
+      pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+      pdf.rect(20, 42, 170, 3, 'F');
+      
+      // Patient details in two columns
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+      pdf.setTextColor(0, 0, 0);
+      
+      // Left column
+      pdf.text('Age:', 20, 50);
+      pdf.text(patient.age.toString(), 50, 50);
+      
+      pdf.text('Community:', 20, 55);
+      pdf.text(patient.community, 50, 55);
+      
+      pdf.text('Last Visit:', 20, 60);
+      pdf.text(patient.lastVisit, 50, 60);
+      
+      // Right column
+      pdf.text('Next Visit:', 110, 50);
+      pdf.text(patient.nextVisit, 140, 50);
+      
+      pdf.text('Status:', 110, 55);
+      pdf.text(patient.status.charAt(0).toUpperCase() + patient.status.slice(1), 140, 55);
+      
+      pdf.text('Adherence:', 110, 60);
+      pdf.text(patient.adherence.charAt(0).toUpperCase() + patient.adherence.slice(1), 140, 60);
+      
+      // Alert indicator if applicable
+      if (patient.alerts > 0) {
+        pdf.setFillColor(239, 68, 68);
+        pdf.circle(15, 40, 3, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(9);
+        pdf.text(patient.alerts.toString(), 15, 40, { align: 'center' as "center" });
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(11);
+      }
+      
+      let y = 80; // Current Y position for content
+      
+      // Current conditions section
+      y = addHeader('Current Conditions', y);
+      
+      // Create condition boxes
+      patient.conditions.forEach(condition => {
+        pdf.setFillColor(248, 250, 252);
+        pdf.roundedRect(20, y, 170, 20, 2, 2, 'F');
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(condition, 25, y + 7);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        
+        // Add condition description
+        const description = condition === "Diabetes Type 2" ? "Managing with medication and lifestyle modifications" :
+                            condition === "Hypertension" ? "Controlled with medication and dietary restrictions" :
+                            condition === "Heart Disease" ? "Requires regular monitoring and medication adherence" :
+                            condition === "Arthritis" ? "Managed with pain medication and physical therapy" :
+                            condition === "Chronic Pain" ? "Pain management protocol in place" :
+                            condition === "Asthma" ? "Managed with inhalers and environmental controls" :
+                            condition === "Migraine" ? "Triggers identified and prevention plan in place" :
+                            condition === "Anxiety" ? "Combination of medication and counseling" :
+                            condition === "Pregnancy" ? "Regular prenatal care and monitoring" :
+                            condition === "Anemia" ? "Iron supplementation and dietary management" :
+                            "Under active treatment and monitoring";
+        
+        pdf.text(description, 25, y + 15);
+        y += 25;
+      });
+      
+      y += 5;
+      
+      // Medication adherence section
+      y = addHeader('Medication Adherence', y);
+      
+      // Adherence visualization
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(20, y, 170, 30, 2, 2, 'F');
+      
+      // Draw adherence chart (simplified version of the web component)
+      const adherenceColor = medicationAdherence >= 90 ? [16, 185, 129] : 
+                            medicationAdherence >= 80 ? [59, 130, 246] : 
+                            medicationAdherence >= 70 ? [245, 158, 11] : 
+                            [239, 68, 68];
+      
+      // Draw circle
+      const centerX = 45;
+      const centerY = y + 15;
+      const radius = 12;
+      
+      // Background circle
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setLineWidth(2);
+      pdf.circle(centerX, centerY, radius, 'S');
+      
+      // Foreground arc (simplified)
+      pdf.setDrawColor(adherenceColor[0], adherenceColor[1], adherenceColor[2]);
+      pdf.setLineWidth(3);
+      const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + (2 * Math.PI * medicationAdherence / 100);
+      
+      // Manually draw arc since jsPDF doesn't have a direct arc method for circles
+      pdf.ellipse(centerX, centerY, radius, radius, 0);
+      
+      // Add percentage in center
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`${medicationAdherence}%`, centerX - 5, centerY + 4);
+      
+      // Add adherence analysis
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+      pdf.text('Adherence Analysis:', 70, y + 10);
+      
+      const adherenceText = medicationAdherence >= 90 
+        ? "Excellent medication adherence indicates strong engagement with treatment plan."
+        : medicationAdherence >= 80
+        ? "Good medication adherence, though occasional lapses are noted."
+        : medicationAdherence >= 70
+        ? "Moderate medication adherence suggests barriers that should be addressed."
+        : "Poor medication adherence indicates significant barriers to treatment that require immediate attention.";
+      
+      const splitAdherenceText = pdf.splitTextToSize(adherenceText, 115);
+      pdf.text(splitAdherenceText, 70, y + 18);
+      
+      if (medicationAdherence < 80) {
+        pdf.setFillColor(254, 243, 199);
+        pdf.rect(70, y + 18 + (splitAdherenceText.length * 5), 115, 10, 'F');
+        pdf.setFontSize(9);
+        pdf.setTextColor(146, 64, 14);
+        pdf.text('Suggested intervention: Schedule medication review appointment to address adherence barriers.', 72, y + 24 + (splitAdherenceText.length * 5));
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(11);
+      }
+      
+      y += 35;
+      
+      // Check if we need a new page
+      if (y > 250) {
+        y = addNewPage();
+      }
+      
+      // AI Treatment Recommendations
+      y = addHeader('AI-Generated Treatment Recommendations', y);
+      
+      treatmentRecommendations.forEach((rec, index) => {
+        // Check if we need a new page
+        if (y > 240) {
+          y = addNewPage();
+        }
+        
+        // Create recommendation box
+        const confidenceColor = rec.confidence >= 90 ? [16, 185, 129] : 
+                               rec.confidence >= 80 ? [59, 130, 246] : 
+                               rec.confidence >= 70 ? [245, 158, 11] : 
+                               [239, 68, 68];
+        
+        pdf.setDrawColor(confidenceColor[0], confidenceColor[1], confidenceColor[2]);
+        pdf.setLineWidth(1.5);
+        pdf.setFillColor(248, 250, 252);
+        pdf.roundedRect(20, y, 170, 35, 2, 2, 'F');
+        pdf.line(20, y, 20, y + 35);
+        
+        // Condition and confidence
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(12);
+        pdf.text(rec.condition, 25, y + 7);
+        
+        // Add confidence badge
+        pdf.setDrawColor(226, 232, 240);
+        pdf.setFillColor(248, 250, 252);
+        pdf.roundedRect(155, y + 4, 30, 6, 3, 3, 'FD');
+        pdf.setFontSize(8);
+        pdf.text(`${rec.confidence}% confidence`, 170, y + 7, { align: 'center' as "center" });
+        
+        // Recommendation text
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        const splitRecText = pdf.splitTextToSize(rec.recommendation, 160);
+        pdf.text(splitRecText, 25, y + 13);
+        
+        // Evidence background
+        const evidenceY = y + 13 + (splitRecText.length * 4) + 2;
+        pdf.setFillColor(241, 245, 249);
+        pdf.rect(25, evidenceY, 160, 8, 'F');
+        
+        // Evidence text
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 116, 139);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Evidence:', 27, evidenceY + 5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(rec.evidence, 50, evidenceY + 5);
+        pdf.setTextColor(0, 0, 0);
+        
+        y += 40;
+      });
+      
+      // Check if we need a new page
+      if (y > 230) {
+        y = addNewPage();
+      }
+      
+      // Community and Cultural Context
+      y = addHeader('Community and Cultural Context', y);
+      
+      // Split into two columns: Community Insights and Cultural Considerations
+      // Community Insights
+      y = addSubheader('Community Insights', y);
+      
+      communityInsights.forEach((insight, index) => {
+        pdf.setFillColor(248, 250, 252);
+        const splitInsight = pdf.splitTextToSize(insight, 160);
+        pdf.roundedRect(20, y, 170, 6 + (splitInsight.length * 5), 2, 2, 'F');
+        pdf.text('•', 25, y + 5);
+        pdf.text(splitInsight, 30, y + 5);
+        y += 10 + ((splitInsight.length - 1) * 5);
+      });
+      
+      y += 5;
+      
+      // Check if we need a new page
+      if (y > 220) {
+        y = addNewPage();
+      }
+      
+      // Cultural Considerations
+      y = addSubheader('Cultural Considerations', y);
+      
+      culturalConsiderations.forEach((consideration, index) => {
+        pdf.setFillColor(248, 250, 252);
+        const splitConsideration = pdf.splitTextToSize(consideration, 160);
+        pdf.roundedRect(20, y, 170, 6 + (splitConsideration.length * 5), 2, 2, 'F');
+        pdf.text('•', 25, y + 5);
+        pdf.text(splitConsideration, 30, y + 5);
+        y += 10 + ((splitConsideration.length - 1) * 5);
+      });
+      
+      y += 5;
+      
+      // Check if we need a new page
+      if (y > 240) {
+        y = addNewPage();
+      }
+      
+      // AI Clinical Summary
+      y = addHeader('AI Clinical Summary', y);
+      
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(20, y, 170, 50, 2, 2, 'F');
+      
+      const splitNotes = pdf.splitTextToSize(aiNotes, 160);
+      pdf.text(splitNotes, 25, y + 7);
+      
+      y += 55;
+      
+      // Disclaimer note
+      pdf.setFillColor(239, 246, 255);
+      pdf.roundedRect(20, y, 170, 15, 2, 2, 'F');
+      pdf.setTextColor(30, 64, 175);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Note:', 25, y + 6);
+      pdf.setFont('helvetica', 'normal');
+      const noteText = 'This report is generated using AI analysis of health data and is intended to assist healthcare providers. All recommendations should be evaluated using clinical judgment and cultural context.';
+      const splitNote = pdf.splitTextToSize(noteText, 160);
+      pdf.text(splitNote, 25, y + 11);
+      
+      // Footer
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setLineWidth(0.5);
+      pdf.line(20, 280, 190, 280);
+      pdf.setTextColor(100, 116, 139);
+      pdf.setFontSize(8);
+      pdf.text('KweCare Healthcare Provider Platform', 105, 285, { align: 'center' as "center" });
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, 105, 290, { align: 'center' as "center" });
+      
+      // Save the PDF
+      pdf.save(`patient-report-${patient.name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      
+      toast.dismiss();
+      toast.success("Patient report downloaded successfully");
+    }, 1500);
   };
 
   return (
@@ -2194,7 +2896,7 @@ const ProviderDashboard = () => {
                             </div>
                           </div>
                           <div className="flex items-start gap-2 mt-4 md:mt-0">
-                            <Button variant="outline" size="sm" onClick={() => handleDownloadAsPdf("patient-report-content", `patient-report-${selectedPatientForReport.name.replace(/\s+/g, '-').toLowerCase()}.pdf`)}>
+                            <Button variant="outline" size="sm" onClick={() => generatePatientReportPDF(selectedPatientForReport)}>
                               <FileDown className="h-4 w-4 mr-2" />
                               Download Report
                             </Button>
@@ -2392,7 +3094,7 @@ const ProviderDashboard = () => {
               Close
             </Button>
             {!generatingPatientReport && selectedPatientForReport && (
-              <Button onClick={() => handleDownloadAsPdf("patient-report-content", `patient-report-${selectedPatientForReport.name.replace(/\s+/g, '-').toLowerCase()}.pdf`)}>
+              <Button onClick={() => generatePatientReportPDF(selectedPatientForReport)}>
                 <FileDown className="h-4 w-4 mr-2" />
                 Download Report
               </Button>
@@ -2400,6 +3102,7 @@ const ProviderDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {renderHiddenReportContent()}
     </>
   );
 };
