@@ -1,13 +1,16 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Heart } from "lucide-react";
+import { Menu, X, Heart, LogOut } from "lucide-react";
+import LanguageSelector from "@/components/cultural-safety/LanguageSelector";
+import { AuthContext } from "@/App";
+import { toast } from "sonner";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, setIsAuthenticated, userType } = useContext(AuthContext);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,6 +23,15 @@ const Header = () => {
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("kwecare_session");
+    sessionStorage.removeItem("kwecare_session");
+    localStorage.removeItem("kwecare_user_type");
+    sessionStorage.removeItem("kwecare_user_type");
+    setIsAuthenticated(false);
+    toast.success("Logged out successfully");
   };
 
   return (
@@ -67,28 +79,41 @@ const Header = () => {
           >
             Features
           </Link>
-          <Link
-            to="/dashboard"
-            className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
-              isActive("/dashboard") ? "text-kwecare-primary" : "text-foreground/80"
-            }`}
-          >
-            Dashboard
-          </Link>
+          {isAuthenticated && (
+            <Link
+              to={userType === "provider" ? "/provider-dashboard" : "/dashboard"}
+              className={`text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                isActive("/dashboard") || isActive("/provider-dashboard") ? "text-kwecare-primary" : "text-foreground/80"
+              }`}
+            >
+              Dashboard
+            </Link>
+          )}
         </nav>
 
         {/* Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link to="/login">
-            <Button variant="ghost" size="sm" className="font-medium">
-              Log in
+          <LanguageSelector />
+          
+          {isAuthenticated ? (
+            <Button variant="outline" size="sm" className="font-medium gap-1" onClick={handleLogout}>
+              <LogOut className="h-3.5 w-3.5" />
+              Log out
             </Button>
-          </Link>
-          <Link to="/signup">
-            <Button size="sm" className="bg-kwecare-primary hover:bg-kwecare-primary/90 font-medium">
-              Sign up
-            </Button>
-          </Link>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm" className="font-medium">
+                  Log in
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button size="sm" className="bg-kwecare-primary hover:bg-kwecare-primary/90 font-medium">
+                  Sign up
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -136,26 +161,42 @@ const Header = () => {
             >
               Features
             </Link>
-            <Link
-              to="/dashboard"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
-                isActive("/dashboard") ? "text-kwecare-primary" : "text-foreground/80"
-              }`}
-            >
-              Dashboard
-            </Link>
+            {isAuthenticated && (
+              <Link
+                to={userType === "provider" ? "/provider-dashboard" : "/dashboard"}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`block py-2 text-sm font-medium transition-colors hover:text-kwecare-primary ${
+                  isActive("/dashboard") || isActive("/provider-dashboard") ? "text-kwecare-primary" : "text-foreground/80"
+                }`}
+              >
+                Dashboard
+              </Link>
+            )}
+            
+            <div className="py-2 flex justify-center">
+              <LanguageSelector />
+            </div>
+            
             <div className="pt-2 flex flex-col space-y-3">
-              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full justify-center">
-                  Log in
+              {isAuthenticated ? (
+                <Button variant="outline" className="w-full justify-center gap-1" onClick={handleLogout}>
+                  <LogOut className="h-3.5 w-3.5" />
+                  Log out
                 </Button>
-              </Link>
-              <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button className="w-full justify-center bg-kwecare-primary hover:bg-kwecare-primary/90">
-                  Sign up
-                </Button>
-              </Link>
+              ) : (
+                <>
+                  <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full justify-center">
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full justify-center bg-kwecare-primary hover:bg-kwecare-primary/90">
+                      Sign up
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
