@@ -135,10 +135,17 @@ class GeminiApiService {
           data.candidates[0].content.parts[0]) {
         let response = data.candidates[0].content.parts[0].text;
         
-        // Enhance the formatting of the response
-        response = this.enhanceResponseFormatting(response);
+        // Clean up response by removing any "AI:" prefix that might be in the response
+        let cleanedResponse = response;
+        // Check for "AI:" prefix at the start of the response and remove it
+        if (cleanedResponse.startsWith("AI:")) {
+          cleanedResponse = cleanedResponse.substring(3).trim();
+        }
         
-        return response;
+        // Enhance the formatting of the response
+        cleanedResponse = this.enhanceResponseFormatting(cleanedResponse);
+        
+        return cleanedResponse;
       } else {
         throw new Error('Unexpected response format from Gemini API');
       }

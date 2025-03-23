@@ -111,6 +111,11 @@ const formatMessageContent = (content: string) => {
   // Trim content to remove any leading/trailing whitespace
   content = content.trim();
   
+  // Remove any "AI:" prefix that might be in the existing messages
+  if (content.startsWith("AI:")) {
+    content = content.substring(3).trim();
+  }
+  
   // Remove any leading tab or spaces from each line
   content = content.replace(/^[ \t]+/gm, '');
   
