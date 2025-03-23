@@ -611,8 +611,9 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
         { temperature: 0.7 }
       );
       
-      // Remove "AI:" prefix if present
-      const cleanedResponse = aiResponse.replace(/^AI:\s*/i, '');
+      // Clean up response: remove "AI:" prefix and "Hello Sarah," greeting
+      let cleanedResponse = aiResponse.replace(/^AI:\s*/i, '');
+      cleanedResponse = cleanedResponse.replace(/^Hello Sarah,\s*/i, '');
       
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,

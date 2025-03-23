@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3002; // Using port 3002 to avoid conflicts
 
 // Enable CORS for the frontend
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000', 'http://localhost:5175'] // Allow multiple origins
+  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000', 'http://localhost:5175', 'http://localhost:5174'] // Allow multiple origins
 }));
 app.use(express.json());
 
