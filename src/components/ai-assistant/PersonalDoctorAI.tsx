@@ -158,6 +158,12 @@ const formatMessageContent = (content: string) => {
   return '<div class="ai-message-content text-content-left">' + content + '</div>';
 };
 
+// Add this to the type declarations
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message: string;
+}
+
 const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -291,73 +297,222 @@ const PersonalDoctorAI: React.FC<PersonalDoctorAIProps> = ({ isOpen, onClose }) 
   // Function to toggle recording
   const toggleRecording = async () => {
     if (isRecording) {
-      // Stop recording
-      mediaRecorderRef.current?.stop();
+      // If we're already recording, stop it
+      console.log("Stopping recording");
+      
+      // Stop MediaRecorder if active
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+      
+      // Stop Web Speech API if active
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      
       setIsRecording(false);
     } else {
       try {
         console.log("Starting recording...");
-        // Check browser support
+        
+        // Try using Web Speech API first if available (more reliable in browsers)
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+          console.log("Using Web Speech API (browser native)");
+          return useWebSpeechRecognition();
+        }
+        
+        // Fall back to MediaRecorder + Google Cloud if Web Speech API isn't available
+        console.log("Using MediaRecorder + Google Speech API");
+        
+        // Check browser support for MediaRecorder
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          console.error("Media devices API not supported");
+          console.error("Media recording not supported in this browser");
+          alert("Voice recording is not supported in your browser. Try Chrome or Edge.");
           return;
+        }
+
+        // Verify Google Speech API is initialized
+        if (!googleSpeechService.isApiInitialized()) {
+          console.warn("Google Speech API not initialized. Using mock service.");
+          const keyFilePath = import.meta.env.VITE_GOOGLE_SPEECH_KEY_PATH || '';
+          if (keyFilePath) {
+            googleSpeechService.initialize(keyFilePath);
+          } else {
+            console.warn('Missing Google Speech API key path. Will use mock responses.');
+          }
         }
         
         // Request microphone access
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          } 
+        });
         
-        // Create media recorder
-        const mediaRecorder = new MediaRecorder(stream);
+        console.log("Microphone access granted");
+        
+        // Create media recorder with supported options
+        let options;
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = {mimeType: 'audio/webm'};
+        } else {
+          options = {};
+        }
+        
+        const mediaRecorder = new MediaRecorder(stream, options);
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
         
         // Set up event handlers
         mediaRecorder.ondataavailable = (e) => {
+          console.log("Data available event, data size:", e.data.size);
           if (e.data.size > 0) {
             audioChunksRef.current.push(e.data);
           }
         };
         
         mediaRecorder.onstop = async () => {
-          // Create blob from chunks
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+          console.log("MediaRecorder stopped, processing audio...");
+          console.log("Audio chunks collected:", audioChunksRef.current.length);
           
-          // Convert blob to array buffer
-          const arrayBuffer = await audioBlob.arrayBuffer();
-          
-          // Use Google Speech API to transcribe
-          try {
-            const transcript = await googleSpeechService.transcribeAudio(arrayBuffer);
-            setInputMessage(transcript);
-            
-            // Submit if there's content
-            if (transcript.trim()) {
-              setTimeout(() => {
-                if (inputRef.current) {
-                  const form = inputRef.current.form;
-                  if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                }
-              }, 300);
-            }
-          } catch (error) {
-            console.error('Error transcribing audio:', error);
+          if (audioChunksRef.current.length === 0) {
+            console.warn("No audio chunks collected");
+            setIsRecording(false);
+            return;
           }
           
-          // Stop all tracks
-          stream.getTracks().forEach(track => track.stop());
+          // Create blob from chunks
+          const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
+          console.log("Created audio blob of type", mediaRecorder.mimeType, "size:", audioBlob.size);
+          
+          // Convert blob to array buffer for the Google Speech API
+          const arrayBuffer = await audioBlob.arrayBuffer();
+          console.log("Converted to ArrayBuffer, size:", arrayBuffer.byteLength);
+          
+          try {
+            // Show transcribing indicator
+            setInputMessage("Transcribing...");
+            
+            // Send audio to Google Speech API
+            console.log("Sending to Google Speech API for transcription");
+            const transcript = await googleSpeechService.transcribeAudio(arrayBuffer);
+            console.log("Received transcript:", transcript);
+            
+            if (transcript && transcript.trim()) {
+              setInputMessage(transcript);
+              
+              // Auto-submit after a short delay
+              setTimeout(() => {
+                if (inputRef.current && inputRef.current.form) {
+                  inputRef.current.form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+              }, 500);
+            } else {
+              setInputMessage("");
+              console.warn("Empty transcript received");
+            }
+          } catch (error) {
+            console.error("Error with Google Speech API:", error);
+            setInputMessage("");
+            alert("Sorry, I couldn't understand what you said. Please try again.");
+          } finally {
+            // Stop all tracks
+            stream.getTracks().forEach(track => track.stop());
+            setIsRecording(false);
+          }
         };
         
         // Add error logging
         mediaRecorder.onerror = (event) => {
           console.error("MediaRecorder error:", event);
+          setIsRecording(false);
+          alert("Error recording audio");
         };
         
-        // Start recording
-        mediaRecorder.start();
+        // Start recording with a time slice to get data frequently
+        mediaRecorder.start(1000); // Get data every second
+        setInputMessage("Recording... (speak now)");
         setIsRecording(true);
+        console.log("MediaRecorder started with mimeType:", mediaRecorder.mimeType);
+        
       } catch (error) {
-        console.error("Detailed recording error:", error);
+        console.error("Recording initialization error:", error);
+        setIsRecording(false);
+        alert("Couldn't access your microphone. Please check permissions and try again.");
       }
+    }
+  };
+  
+  // Function to use Web Speech API directly
+  const useWebSpeechRecognition = () => {
+    try {
+      // Initialize speech recognition
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      
+      // Configure recognition
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+      // Set up event handlers
+      recognition.onstart = () => {
+        console.log("Web Speech recognition started");
+        setIsRecording(true);
+        setInputMessage("Listening...");
+      };
+      
+      recognition.onresult = (event) => {
+        console.log("Speech recognition result received");
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join(' ');
+        
+        console.log("Web Speech API transcript:", transcript);
+        setInputMessage(transcript);
+      };
+      
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error("Web Speech recognition error:", event.error);
+        setIsRecording(false);
+        if (event.error === 'not-allowed') {
+          alert("Microphone access denied. Please allow microphone access in your browser settings.");
+        }
+      };
+      
+      recognition.onend = () => {
+        console.log("Web Speech recognition ended");
+        setIsRecording(false);
+        
+        // If there's input, submit it after a short delay
+        setTimeout(() => {
+          if (inputRef.current?.value && 
+              inputRef.current.value.trim() && 
+              inputRef.current.value !== "Listening...") {
+            const form = inputRef.current.form;
+            if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        }, 500);
+      };
+      
+      // Start recognition
+      recognition.start();
+    } catch (error) {
+      console.error("Web Speech API error:", error);
+      setIsRecording(false);
+      alert("Speech recognition failed. Trying another method...");
+      
+      // Fall back to mock input if Web Speech API fails
+      setInputMessage("What should I do to manage my diabetes?");
+      setTimeout(() => {
+        if (inputRef.current && inputRef.current.form) {
+          inputRef.current.form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      }, 500);
     }
   };
   
