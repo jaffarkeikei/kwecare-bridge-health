@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { FileText, Pill, TestTube, Shield, Activity } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,10 +87,6 @@ const HealthRecordsTab = () => {
         </CardHeader>
       </Card>
       
-      <div className="flex justify-end gap-3">
-        <Button variant="outline">Export Records</Button>
-        <Button variant="branded">Request Medical Records</Button>
-      </div>
     </div>
   );
 };

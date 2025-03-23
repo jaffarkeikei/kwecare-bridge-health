@@ -194,63 +194,7 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
         </CardContent>
       </Card>
 
-      {/* AI-Assisted Health Summary */}
-      <Card className="animate-fade-in">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            AI-Assisted Health Summary
-          </CardTitle>
-          <CardDescription>
-            Personalized health insights based on your medical data
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
-              <h3 className="font-medium text-blue-700 mb-2">Recent Health Trends</h3>
-              <p className="text-sm">
-                Your blood glucose levels have shown improvement over the last 3 months, decreasing from an average of 7.8 mmol/L to 7.2 mmol/L. This 7.7% reduction indicates your current treatment plan is effective.
-              </p>
-              <p className="text-sm mt-2">
-                The most significant improvements occurred following your medication adjustment in early October. Consider maintaining your current dietary and medication regimen.
-              </p>
-            </div>
-            
-            <div className="bg-amber-50 p-4 rounded-md border border-amber-100">
-              <h3 className="font-medium text-amber-700 mb-2">Areas of Attention</h3>
-              <p className="text-sm">
-                Your blood pressure readings remain slightly elevated at 144/91 mmHg (average of last 3 readings). This is above the recommended target of 130/80 mmHg for your risk profile.
-              </p>
-              <p className="text-sm mt-2">
-                Based on your recent lab results and medication adherence data, we recommend discussing potential adjustments to your antihypertensive medication at your next appointment on June 15th. Consider incorporating the DASH diet and moderate exercise 3-4 times weekly.
-              </p>
-            </div>
-            
-            <div className="bg-green-50 p-4 rounded-md border border-green-100">
-              <h3 className="font-medium text-green-700 mb-2">Positive Outcomes</h3>
-              <p className="text-sm">
-                Your cholesterol levels have significantly improved with LDL decreasing from 138 mg/dL to 110 mg/dL over 6 months. Your HDL has increased from 42 mg/dL to 48 mg/dL, improving your cholesterol ratio.
-              </p>
-              <p className="text-sm mt-2">
-                Your consistent medication adherence (90%) has been key to this improvement. The combination of statin therapy and dietary changes you've implemented has been particularly effective. Continue your current regimen with regular monitoring.
-              </p>
-            </div>
-
-            <div className="bg-indigo-50 p-4 rounded-md border border-indigo-100">
-              <h3 className="font-medium text-indigo-700 mb-2">Cultural and Traditional Considerations</h3>
-              <p className="text-sm">
-                Based on your traditional medicine preferences, we've analyzed the compatibility of your traditional remedies with your current medical treatment. Your use of herbal tea for stress management complements your hypertension management.
-              </p>
-              <p className="text-sm mt-2">
-                Consider discussing the integration of traditional dietary practices with your nutritionist at your next appointment to further enhance your metabolic health outcomes.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div id="analytics-report" className="hidden">
+      <div id="analytics-report" className="absolute left-[-9999px] top-[-9999px] w-[800px] opacity-0 pointer-events-none" style={{ visibility: 'hidden' }}>
         <div className="p-6 bg-white space-y-6">
           <div className="border-b pb-4">
             <h2 className="text-2xl font-bold">Health Analytics Report</h2>
@@ -394,6 +338,51 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
           </div>
           
           <div>
+            <h3 className="text-lg font-semibold mb-2">AI-Assisted Health Summary</h3>
+            <div className="space-y-3">
+              <div className="border-l-4 border-blue-400 p-3 rounded-lg bg-blue-50">
+                <h4 className="font-medium text-blue-700">Recent Health Trends</h4>
+                <p className="text-sm mt-1">
+                  Your blood glucose levels have shown improvement over the last 3 months, decreasing from an average of 7.8 mmol/L to 7.2 mmol/L. This 7.7% reduction indicates your current treatment plan is effective.
+                </p>
+                <p className="text-sm mt-2">
+                  The most significant improvements occurred following your medication adjustment in early October. Consider maintaining your current dietary and medication regimen.
+                </p>
+              </div>
+              
+              <div className="border-l-4 border-amber-400 p-3 rounded-lg bg-amber-50">
+                <h4 className="font-medium text-amber-700">Areas of Attention</h4>
+                <p className="text-sm mt-1">
+                  Your blood pressure readings remain slightly elevated at 144/91 mmHg (average of last 3 readings). This is above the recommended target of 130/80 mmHg for your risk profile.
+                </p>
+                <p className="text-sm mt-2">
+                  Based on your recent lab results and medication adherence data, we recommend discussing potential adjustments to your antihypertensive medication at your next appointment on June 15th. Consider incorporating the DASH diet and moderate exercise 3-4 times weekly.
+                </p>
+              </div>
+              
+              <div className="border-l-4 border-green-400 p-3 rounded-lg bg-green-50">
+                <h4 className="font-medium text-green-700">Positive Outcomes</h4>
+                <p className="text-sm mt-1">
+                  Your cholesterol levels have significantly improved with LDL decreasing from 138 mg/dL to 110 mg/dL over 6 months. Your HDL has increased from 42 mg/dL to 48 mg/dL, improving your cholesterol ratio.
+                </p>
+                <p className="text-sm mt-2">
+                  Your consistent medication adherence (90%) has been key to this improvement. The combination of statin therapy and dietary changes you've implemented has been particularly effective. Continue your current regimen with regular monitoring.
+                </p>
+              </div>
+
+              <div className="border-l-4 border-indigo-400 p-3 rounded-lg bg-indigo-50">
+                <h4 className="font-medium text-indigo-700">Cultural and Traditional Considerations</h4>
+                <p className="text-sm mt-1">
+                  Based on your traditional medicine preferences, we've analyzed the compatibility of your traditional remedies with your current medical treatment. Your use of herbal tea for stress management complements your hypertension management.
+                </p>
+                <p className="text-sm mt-2">
+                  Consider discussing the integration of traditional dietary practices with your nutritionist at your next appointment to further enhance your metabolic health outcomes.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div>
             <h3 className="text-lg font-semibold mb-2">Health Recommendations</h3>
             <div className="space-y-2">
               <div className="border p-3 rounded-lg">
@@ -425,145 +414,6 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
           </div>
         </div>
       </div>
-
-      {/* Separate buttons similar to provider's analytics */}
-      <div className="text-center py-8">
-        <button
-          onClick={handlePreviewReport}
-          className="mx-3 px-8 py-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-md font-medium inline-flex items-center"
-        >
-          <Eye className="mr-2 h-5 w-5" />
-          Preview Report
-        </button>
-        
-        <button
-          onClick={handleGenerateReport}
-          className="mx-3 px-8 py-3 bg-blue-600 text-white rounded-md font-medium inline-flex items-center"
-        >
-          <FileText className="mr-2 h-5 w-5" />
-          Generate Detailed Report
-        </button>
-        
-        <button
-          onClick={handleDownloadReport}
-          className="mx-3 px-8 py-3 bg-green-600 text-white rounded-md font-medium inline-flex items-center"
-        >
-          <Download className="mr-2 h-5 w-5" />
-          Export Data
-        </button>
-      </div>
-
-      <Dialog open={showReportPreview} onOpenChange={setShowReportPreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Health Analytics Report Preview</DialogTitle>
-            <DialogDescription>
-              Review your health analytics report before downloading
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4">
-            <div id="report-preview">
-              <div className="space-y-6">
-                <div className="border-b pb-4">
-                  <h2 className="text-2xl font-bold">Health Analytics Report</h2>
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    <div>Generated on {new Date().toLocaleDateString()}</div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Blood Glucose Trends</h3>
-                  <div className="bg-muted/30 p-4 rounded-lg">
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={glucoseData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line type="monotone" dataKey="glucose" stroke="#8B5CF6" strokeWidth={2} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-3 text-sm">
-                      <p className="text-muted-foreground">Average blood glucose level: 7.4 mmol/L</p>
-                      <p className="text-muted-foreground">Target: &lt; 7.0 mmol/L</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Blood Pressure Trends</h3>
-                  <div className="bg-muted/30 p-4 rounded-lg">
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={bloodPressureData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line type="monotone" dataKey="systolic" stroke="#D946EF" strokeWidth={2} />
-                          <Line type="monotone" dataKey="diastolic" stroke="#0EA5E9" strokeWidth={2} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-3 text-sm">
-                      <p className="text-muted-foreground">Average blood pressure: 143/90 mmHg</p>
-                      <p className="text-muted-foreground">Target: &lt; 130/80 mmHg</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Medication Adherence</h3>
-                  <div className="bg-muted/30 p-4 rounded-lg">
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={medicationAdherenceData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {medicationAdherenceData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-3 text-sm">
-                      <p className="text-muted-foreground">Overall medication adherence rate: 82%</p>
-                      <p className="text-muted-foreground">Target: &gt; 90%</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground border-t pt-4">
-                  Generated on {new Date().toLocaleString()} by KweCare Health
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowReportPreview(false)}>
-              Close
-            </Button>
-            <Button onClick={handleDownloadReport}>
-              <Download className="h-4 w-4 mr-2" />
-              Download
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="animate-fade-in">
@@ -886,6 +736,189 @@ const HealthAnalyticsReport: React.FC<HealthAnalyticsReportProps> = ({ patientId
           </CardFooter>
         </Card>
       </div>
+
+      <div className="text-center py-8">
+        <button
+          onClick={handlePreviewReport}
+          className="mx-3 px-8 py-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-md font-medium inline-flex items-center"
+        >
+          <Eye className="mr-2 h-5 w-5" />
+          Preview Report
+        </button>
+        
+        <button
+          onClick={handleGenerateReport}
+          className="mx-3 px-8 py-3 bg-blue-600 text-white rounded-md font-medium inline-flex items-center"
+        >
+          <FileText className="mr-2 h-5 w-5" />
+          Generate Detailed Report
+        </button>
+        
+        <button
+          onClick={handleDownloadReport}
+          className="mx-3 px-8 py-3 bg-green-600 text-white rounded-md font-medium inline-flex items-center"
+        >
+          <Download className="mr-2 h-5 w-5" />
+          Export Data
+        </button>
+      </div>
+
+      <Dialog open={showReportPreview} onOpenChange={setShowReportPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Health Analytics Report Preview</DialogTitle>
+            <DialogDescription>
+              Review your health analytics report before downloading
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <div id="report-preview">
+              <div className="space-y-6">
+                <div className="border-b pb-4">
+                  <h2 className="text-2xl font-bold">Health Analytics Report</h2>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    <div>Generated on {new Date().toLocaleDateString()}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Blood Glucose Trends</h3>
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={glucoseData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="glucose" stroke="#8B5CF6" strokeWidth={2} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-3 text-sm">
+                      <p className="text-muted-foreground">Average blood glucose level: 7.4 mmol/L</p>
+                      <p className="text-muted-foreground">Target: &lt; 7.0 mmol/L</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Blood Pressure Trends</h3>
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={bloodPressureData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="systolic" stroke="#D946EF" strokeWidth={2} />
+                          <Line type="monotone" dataKey="diastolic" stroke="#0EA5E9" strokeWidth={2} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-3 text-sm">
+                      <p className="text-muted-foreground">Average blood pressure: 143/90 mmHg</p>
+                      <p className="text-muted-foreground">Target: &lt; 130/80 mmHg</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Medication Adherence</h3>
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={medicationAdherenceData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {medicationAdherenceData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-3 text-sm">
+                      <p className="text-muted-foreground">Overall medication adherence rate: 82%</p>
+                      <p className="text-muted-foreground">Target: &gt; 90%</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">AI-Assisted Health Summary</h3>
+                  <div className="space-y-3">
+                    <div className="border-l-4 border-blue-400 p-3 rounded-lg bg-blue-50">
+                      <h4 className="font-medium text-blue-700">Recent Health Trends</h4>
+                      <p className="text-sm mt-1">
+                        Your blood glucose levels have shown improvement over the last 3 months, decreasing from an average of 7.8 mmol/L to 7.2 mmol/L. This 7.7% reduction indicates your current treatment plan is effective.
+                      </p>
+                      <p className="text-sm mt-2">
+                        The most significant improvements occurred following your medication adjustment in early October. Consider maintaining your current dietary and medication regimen.
+                      </p>
+                    </div>
+                    
+                    <div className="border-l-4 border-amber-400 p-3 rounded-lg bg-amber-50">
+                      <h4 className="font-medium text-amber-700">Areas of Attention</h4>
+                      <p className="text-sm mt-1">
+                        Your blood pressure readings remain slightly elevated at 144/91 mmHg (average of last 3 readings). This is above the recommended target of 130/80 mmHg for your risk profile.
+                      </p>
+                      <p className="text-sm mt-2">
+                        Based on your recent lab results and medication adherence data, we recommend discussing potential adjustments to your antihypertensive medication at your next appointment on June 15th. Consider incorporating the DASH diet and moderate exercise 3-4 times weekly.
+                      </p>
+                    </div>
+                    
+                    <div className="border-l-4 border-green-400 p-3 rounded-lg bg-green-50">
+                      <h4 className="font-medium text-green-700">Positive Outcomes</h4>
+                      <p className="text-sm mt-1">
+                        Your cholesterol levels have significantly improved with LDL decreasing from 138 mg/dL to 110 mg/dL over 6 months. Your HDL has increased from 42 mg/dL to 48 mg/dL, improving your cholesterol ratio.
+                      </p>
+                      <p className="text-sm mt-2">
+                        Your consistent medication adherence (90%) has been key to this improvement. The combination of statin therapy and dietary changes you've implemented has been particularly effective. Continue your current regimen with regular monitoring.
+                      </p>
+                    </div>
+
+                    <div className="border-l-4 border-indigo-400 p-3 rounded-lg bg-indigo-50">
+                      <h4 className="font-medium text-indigo-700">Cultural and Traditional Considerations</h4>
+                      <p className="text-sm mt-1">
+                        Based on your traditional medicine preferences, we've analyzed the compatibility of your traditional remedies with your current medical treatment. Your use of herbal tea for stress management complements your hypertension management.
+                      </p>
+                      <p className="text-sm mt-2">
+                        Consider discussing the integration of traditional dietary practices with your nutritionist at your next appointment to further enhance your metabolic health outcomes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-muted-foreground border-t pt-4">
+                  Generated on {new Date().toLocaleString()} by KweCare Health
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowReportPreview(false)}>
+              Close
+            </Button>
+            <Button onClick={handleDownloadReport}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
