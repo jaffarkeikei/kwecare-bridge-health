@@ -19,7 +19,7 @@ const PersonalDoctorButton: React.FC<PersonalDoctorButtonProps> = ({ className }
       >
         <Brain className="mr-1.5 h-4 w-4" />
         <span className="flex items-center gap-1">
-          <span className="font-medium">AI Doctor</span>
+          <span className="font-medium">AI Assistant</span>
           <Sparkles className="h-3 w-3 text-amber-200" />
         </span>
       </Button>

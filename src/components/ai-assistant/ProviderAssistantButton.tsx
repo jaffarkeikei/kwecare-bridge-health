@@ -1,19 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Stethoscope, Sparkles } from "lucide-react";
 import ProviderAssistantAI from "./ProviderAssistantAI";
 
 interface ProviderAssistantButtonProps {
   className?: string;
+  autoOpen?: boolean;
 }
 
-const ProviderAssistantButton: React.FC<ProviderAssistantButtonProps> = ({ className }) => {
+const ProviderAssistantButton: React.FC<ProviderAssistantButtonProps> = ({ 
+  className,
+  autoOpen = false
+}) => {
   const [isOpen, setIsOpen] = useState(false);
+  
+  const handleToggle = () => {
+    setIsOpen(prev => !prev);
+  };
+  
+  const handleClose = () => {
+    setIsOpen(false);
+  };
 
   return (
     <>
       <Button
-        onClick={() => setIsOpen(true)}
+        onClick={handleToggle}
         className={`bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:opacity-90 transition-opacity ${className}`}
         size="sm"
       >
@@ -26,7 +38,7 @@ const ProviderAssistantButton: React.FC<ProviderAssistantButtonProps> = ({ class
 
       <ProviderAssistantAI 
         isOpen={isOpen} 
-        onClose={() => setIsOpen(false)} 
+        onClose={handleClose} 
       />
     </>
   );

@@ -316,16 +316,16 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
   
   // Scroll to bottom whenever messages change
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && isOpen) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, isOpen]);
   
   // Handle escape key to close modal
   useEffect(() => {
     const handleEscapeKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        handleClose();
       }
     };
     
@@ -334,9 +334,9 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
   
-  // Clean up on unmount
+  // Clean up on unmount or close
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -954,6 +954,9 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
     }
     // Stop any speech before closing
     stopSpeaking();
+    // Clear messages when closing to reset the conversation for next open
+    setMessages([]);
+    setIsMounted(false);
     onClose();
   };
 
@@ -1137,6 +1140,7 @@ const ProviderAssistantAI: React.FC<ProviderAssistantAIProps> = ({ isOpen, onClo
               size="icon"
               onClick={handleClose}
               className="h-8 w-8 hover:bg-red-50 hover:text-red-600"
+              title="Close"
             >
               <X className="h-4 w-4" />
             </Button>
