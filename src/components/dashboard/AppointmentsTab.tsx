@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Clock, User, Stethoscope, ArrowLeft, Video, Phone, MapPin, Plus } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, Clock, User, Stethoscope, ArrowLeft, Video, Phone, MapPin, Plus, ArrowRight } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -161,6 +161,92 @@ const AppointmentsTab = () => {
     );
   }
 
+  // Upcoming appointments section (moved from Dashboard Overview)
+  const renderUpcomingAppointments = () => {
+    const upcomingAppointments = appointments.filter(app => 
+      app.status === "upcoming" || 
+      (app.status === "scheduled" && new Date(app.date).getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000)
+    ).slice(0, 3);
+    
+    return (
+      <Card className="glass-card shadow-sm mb-6 border border-blue-200/50 overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-kwecare-primary" />
+              Upcoming Appointments
+            </CardTitle>
+            <Badge variant="outline" className="bg-blue-100/50 text-blue-700 border-blue-200">
+              {upcomingAppointments.length} Upcoming
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          {upcomingAppointments.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              <Calendar className="h-10 w-10 mx-auto text-muted-foreground/60 mb-2" />
+              <p>No upcoming appointments</p>
+              <Button 
+                variant="link" 
+                size="sm" 
+                className="mt-2"
+                onClick={handleScheduleNew}
+              >
+                Schedule an appointment
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingAppointments.map((appointment) => (
+                <div key={appointment.id} className="p-3 rounded-md bg-card hover:bg-blue-50/30 transition-colors border border-blue-100/50 flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">{appointment.title}</div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                      <Clock className="h-3.5 w-3.5" /> {appointment.time}
+                      <span className="mx-1">•</span>
+                      <User className="h-3.5 w-3.5" /> {appointment.doctor}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {appointment.type === "telemedicine" && appointment.status === "upcoming" && (
+                      <Button 
+                        size="sm" 
+                        className="h-8 bg-kwecare-primary hover:bg-kwecare-primary/90"
+                        onClick={() => handleJoinCall(appointment.id)}
+                      >
+                        <Video className="h-3.5 w-3.5 mr-1" />
+                        Join
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8"
+                      onClick={() => handleViewAppointment(appointment.id)}
+                    >
+                      Details
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="p-4 pt-0">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full text-sm"
+            onClick={() => setViewMode("list")}
+          >
+            <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+            View All Appointments
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -173,6 +259,9 @@ const AppointmentsTab = () => {
           Schedule New
         </Button>
       </div>
+
+      {/* Render the Upcoming Appointments section at the top */}
+      {viewMode === "list" && renderUpcomingAppointments()}
 
       {viewMode === "list" ? (
         <div className="grid gap-4">

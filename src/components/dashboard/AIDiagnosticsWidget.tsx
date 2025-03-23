@@ -1,14 +1,14 @@
-
 import React, { useState, useContext } from 'react';
-import { Brain, Activity, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Brain, Activity, AlertTriangle, ArrowRight, Info } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TensorflowContext } from '@/components/ai-diagnostics/ModelStatusIndicator';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { encodeSymptoms, predictConditions } from '@/utils/tensorflowModels';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 
 // Common symptoms for quick check
 const QUICK_SYMPTOMS = [
@@ -68,24 +68,37 @@ const AIDiagnosticsWidget = () => {
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
+    <Card className="shadow-sm border border-gray-200/50 overflow-hidden">
+      <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 to-purple-50">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Brain className="h-5 w-5 text-kwecare-primary" />
             TensorFlow.js Quick Check
           </CardTitle>
-          <Badge variant="outline" className="bg-blue-100/50 text-blue-700 border-blue-200">
-            Offline AI
-          </Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="bg-blue-100/50 text-blue-700 border-blue-200 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Offline AI
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs max-w-[200px]">
+                  Runs directly in your browser using TensorFlow.js.
+                  No data is sent to external servers.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </CardHeader>
       
-      <CardContent className="pb-2">
+      <CardContent className="p-4">
         {!quickResult ? (
           <>
             <p className="text-sm text-muted-foreground mb-3">
-              Select symptoms for a quick AI assessment
+              Select your symptoms for a quick AI assessment
             </p>
             
             <div className="flex flex-wrap gap-2 mb-4">
@@ -101,60 +114,81 @@ const AIDiagnosticsWidget = () => {
                 </Button>
               ))}
             </div>
-          </>
-        ) : (
-          <div className="animate-fade-in space-y-3">
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-medium">Quick Result:</h4>
-              <span className="text-sm font-semibold">
-                {quickResult.condition}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({Math.round(quickResult.probability * 100)}% match)
-              </span>
-            </div>
             
-            <div className="flex items-start gap-2 text-sm">
-              <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500" />
-              <p className="text-xs text-muted-foreground">
-                This is a preliminary result. For a comprehensive analysis, use the full AI Diagnostics tool.
-              </p>
-            </div>
-            
-            <div className="pt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full"
+            <div className="flex justify-between gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                disabled={selectedSymptoms.length === 0}
                 onClick={resetCheck}
               >
-                Check Another
+                Reset
               </Button>
+              <Button
+                size="sm"
+                className="flex-1 bg-kwecare-primary hover:bg-kwecare-primary/90"
+                disabled={selectedSymptoms.length === 0 || checking || !modelsLoaded}
+                onClick={runQuickCheck}
+              >
+                {checking ? "Analyzing..." : "Check Symptoms"}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-2">
+            <div className="mb-4">
+              <h4 className="text-md font-medium">Possible Condition</h4>
+              <div className="flex justify-center items-center mt-2">
+                <div className="flex items-center justify-center w-20 h-20 rounded-full bg-kwecare-primary/10 border-4 border-kwecare-primary/20 text-kwecare-primary mb-2">
+                  <Activity className="h-10 w-10" />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold mt-2">{quickResult.condition}</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Probability: {Math.round(quickResult.probability * 100)}%
+              </p>
+              
+              <Separator className="my-4" />
+              
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mt-2 mb-3 flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-amber-800 text-left">
+                  This is a preliminary assessment only. Please consult with a healthcare professional for proper diagnosis and treatment.
+                </p>
+              </div>
+              
+              <div className="flex justify-between gap-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex-1"
+                  onClick={resetCheck}
+                >
+                  New Check
+                </Button>
+                <Button 
+                  size="sm"
+                  className="flex-1 bg-kwecare-primary hover:bg-kwecare-primary/90"
+                  onClick={() => navigate('/ai-diagnostics')}
+                >
+                  Detailed Analysis
+                </Button>
+              </div>
             </div>
           </div>
         )}
       </CardContent>
       
-      <CardFooter className="pt-2 flex gap-2">
-        {!quickResult ? (
-          <Button 
-            className="w-full bg-kwecare-primary hover:bg-kwecare-primary/90"
-            size="sm"
-            disabled={selectedSymptoms.length === 0 || checking || !modelsLoaded}
-            onClick={runQuickCheck}
-          >
-            {checking ? 'Analyzing...' : 'Quick Check'}
-          </Button>
-        ) : null}
-        
+      <CardFooter className="pt-2 p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50">
         <Button 
           variant="outline" 
           size="sm" 
-          className="w-full"
+          className="w-full text-sm"
           onClick={() => navigate('/ai-diagnostics')}
         >
           <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
-          Full Diagnostics
+          Advanced AI Diagnostics
         </Button>
       </CardFooter>
     </Card>

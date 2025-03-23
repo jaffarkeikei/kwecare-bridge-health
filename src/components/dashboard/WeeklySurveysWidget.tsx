@@ -1,6 +1,5 @@
-
 import React from "react";
-import { ClipboardCheck, ArrowRight, Bell } from "lucide-react";
+import { ClipboardCheck, ArrowRight, Bell, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,24 +63,34 @@ const WeeklySurveysWidget = () => {
     }
   };
 
+  // Count pending surveys
+  const pendingSurveys = WEEKLY_SURVEYS.filter(survey => survey.status !== "completed").length;
+
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
+    <Card className="shadow-sm border border-gray-200/50 overflow-hidden">
+      <CardHeader className="pb-2 bg-gradient-to-r from-indigo-50 to-blue-50">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <ClipboardCheck className="h-5 w-5 text-kwecare-primary" />
             Weekly Surveys
           </CardTitle>
           <Badge variant="outline" className="bg-blue-100/50 text-blue-700 border-blue-200">
-            {WEEKLY_SURVEYS.filter(survey => survey.status !== "completed").length} Pending
+            {pendingSurveys} Pending
           </Badge>
         </div>
       </CardHeader>
       
-      <CardContent className="pb-2">
+      <CardContent className="pb-2 p-4">
         <div className="space-y-3">
           {WEEKLY_SURVEYS.map(survey => (
-            <div key={survey.id} className="border rounded-md p-3 bg-card hover:bg-muted/20 transition-colors">
+            <div 
+              key={survey.id} 
+              className={`border rounded-md p-3 transition-colors ${
+                survey.status === "completed" 
+                  ? "bg-green-50/50 border-green-100" 
+                  : "bg-card hover:bg-muted/20 border-gray-200/70"
+              }`}
+            >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-2">
                   {getPriorityIndicator(survey.priority)}
@@ -95,10 +104,20 @@ const WeeklySurveysWidget = () => {
                   <Bell className="h-3 w-3" />
                   <span>Due: {survey.dueDate}</span>
                 </div>
-                <span>{survey.completion}% Complete</span>
+                <span className="flex items-center gap-1">
+                  {survey.status === "completed" && <CheckCircle className="h-3 w-3 text-green-500" />}
+                  {survey.completion}% Complete
+                </span>
               </div>
               
-              <Progress value={survey.completion} className="h-1.5 bg-slate-100" />
+              <Progress 
+                value={survey.completion} 
+                className={`h-1.5 ${
+                  survey.status === "completed" 
+                    ? "bg-green-100" 
+                    : "bg-slate-100"
+                }`} 
+              />
               
               {survey.status !== "completed" && (
                 <Button 
@@ -115,11 +134,11 @@ const WeeklySurveysWidget = () => {
         </div>
       </CardContent>
       
-      <CardFooter className="pt-2">
+      <CardFooter className="pt-2 p-4 bg-gradient-to-r from-indigo-50/50 to-blue-50/50">
         <Button 
           variant="outline" 
           size="sm" 
-          className="w-full"
+          className="w-full text-sm"
           onClick={() => navigate('/surveys')}
         >
           <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
