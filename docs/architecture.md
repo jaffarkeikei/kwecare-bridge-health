@@ -373,18 +373,16 @@ Cultural safety is integrated throughout the application architecture:
 | **UI Components** | Radix UI, Shadcn UI, TailwindCSS |
 | **Routing** | React Router |
 | **State Management** | Context API, React Query |
-| **AI/ML** | TensorFlow.js, Google Cloud AI Services, Hugging Face Transformers |
-| **NLP & Conversation** | OpenAI GPT-4, Azure Language Understanding |
-| **Medical AI** | MedicalBERT, MedPalm, RadImageNet Models |
+| **AI/ML** | TensorFlow.js, Google Cloud AI Services |
+| **NLP & Conversation** | Google Gemini API |
 | **Accessibility** | Google Cloud Text-to-Speech |
-| **Offline Storage** | localStorage, IndexedDB |
+| **Offline Storage** | localStorage, sessionStorage |
 | **Visualization** | Recharts |
 | **Form Handling** | React Hook Form, Zod |
 | **Notifications** | Sonner Toast |
 | **Build & Bundling** | Vite |
 | **Server** | Express.js, Node.js |
-| **Vector Database** | Pinecone, Chroma |
-| **Medical Knowledge Base** | UMLS, SNOMED CT, RxNorm |
+| **Data Management** | localStorage/sessionStorage (primary), Firebase Data Connect (configured but limited usage) |
 
 ## External Service Integrations
 
@@ -397,35 +395,13 @@ KweCare integrates with several external services:
 
 2. **TensorFlow.js Models**
    - Client-side AI capabilities for offline diagnostics
-   - Model optimization for resource-constrained devices
+   - Simplified model architecture for resource-constrained devices
 
-3. **Starlink API (Planned)**
-   - Low-bandwidth satellite communication for remote areas
-   - Store-and-forward capabilities for intermittent connectivity
-
-4. **OpenAI GPT-4**
-   - Powers the conversational AI assistant
+3. **Google Gemini API**
+   - Powers the conversational AI assistants
    - Medical context-aware responses
    - Cultural adaptation for healthcare communication
-   - Local fine-tuned models for reduced latency
-
-5. **Azure Health Bot Service**
-   - Symptom checker integration
-   - Healthcare-specific dialog flows
-   - HIPAA-compliant conversation service
-   - Multilingual medical terminology support
-
-6. **Google MedPalm Integration**
-   - Medical knowledge and reasoning capabilities
-   - Evidence-based treatment recommendations
-   - Medical image analysis with RadImageNet
-   - Provider decision support with explanations
-
-7. **UMLS and SNOMED CT Access**
-   - Standardized medical terminology
-   - Diagnostic code mapping
-   - Medical knowledge graphs
-   - Cross-referencing symptoms with potential conditions
+   - Mock response generation when API is unavailable
 
 For detailed information on specific integrations, see:
 - [Text-to-Speech Integration](./text-to-speech.md)

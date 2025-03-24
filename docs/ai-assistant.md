@@ -62,14 +62,13 @@ The NLP engine is responsible for understanding user inputs and converting them 
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| Intent Recognition | GPT-4, BERT | Identify the user's goal or request |
-| Entity Extraction | Named Entity Recognition Models | Extract key information like symptoms, medications, dates |
-| Context Manager | In-memory state + vector embedding | Maintain conversation context and reference history |
-| Language Identification | CLD3, fastText | Detect language for multilingual support |
+| Intent Recognition | Google Gemini | Identify the user's goal or request |
+| Entity Extraction | Google Gemini | Extract key information like symptoms, medications, dates |
+| Context Manager | In-memory state | Maintain conversation context and reference history |
+| Language Identification | Browser language API | Detect language for multilingual support |
 
 **Offline Capabilities:**
-- Lightweight ONNX models for basic intent recognition
-- Pre-cached entity recognition patterns
+- Mock response generation when API is unavailable
 - Local conversation context storage
 
 ### 2. Knowledge Retrieval System
@@ -78,15 +77,14 @@ The knowledge retrieval system accesses and processes information from various s
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| Vector Database | Pinecone, Chroma | Store and retrieve semantically similar information |
-| Medical Knowledge Base | UMLS, SNOMED CT Integration | Access standardized medical information |
+| Context Engine | Patient data context | Provide patient-specific information to the AI |
 | User Knowledge Base | Patient Records + Preferences | Personalize responses based on patient history |
-| Evidence Retriever | PubMed API, Medical Guidelines DB | Source evidence-based information |
+| Formatting Engine | Response enhancement | Structure AI responses for better readability |
 
 **Integration Points:**
-- Medical terminology standardization with UMLS
-- Patient record federation for contextual understanding
-- Cultural knowledge integration for appropriate guidance
+- Patient record integration for contextual understanding
+- Cultural consideration in prompt design
+- Language adaptation for multilingual support
 
 ### 3. Dialog Management System
 
@@ -123,10 +121,10 @@ The response generator creates natural, informative, and culturally appropriate 
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| Template Engine | Handlebars, GPT-4 | Structure responses for different scenarios |
-| Personalization Engine | User Preference Models | Adapt tone, detail level, and terminology |
-| Cultural Adaptation | Cultural Safety Rules Engine | Ensure cultural appropriateness |
-| Multilingual Generation | Neural Machine Translation | Support indigenous and other languages |
+| Template Engine | Google Gemini | Structure responses for different scenarios |
+| Personalization Engine | Context-based prompting | Adapt tone, detail level, and terminology |
+| Cultural Adaptation | Prompt engineering | Ensure cultural appropriateness |
+| Multilingual Generation | Google Gemini | Support indigenous and other languages |
 
 **Response Quality Controls:**
 - Medical accuracy verification against knowledge base
@@ -174,24 +172,17 @@ Key cultural safety features include:
 
 ## Offline-First Architecture
 
-The AI Assistant implements a sophisticated offline capability system:
+The AI Assistant implements a pragmatic offline capability system:
 
 ```mermaid
 graph TD
     subgraph "Offline Architecture"
-        Browser[Browser/App] --> LocalModels[Local AI Models]
-        Browser --> IndexedDB[IndexedDB Storage]
-        Browser --> PWA[Progressive Web App Cache]
+        Browser[Browser/App] --> LocalStorage[Session Storage]
+        Browser --> MockResponses[Mock Responses]
         
-        LocalModels --> ONNX[ONNX Runtime]
-        LocalModels --> TFLite[TensorFlow Lite]
-        
-        IndexedDB --> ConvHistory[Conversation History]
-        IndexedDB --> UserData[User Data]
-        IndexedDB --> KnowledgeCache[Knowledge Cache]
-        
-        SyncManager[Background Sync] --> API[Server API]
-        NetworkStatus[Network Status Monitor] --> SyncManager
+        NetworkStatus[Network Status Monitor] --> ResponseStrategy[Response Strategy]
+        ResponseStrategy --> API[Gemini API]
+        ResponseStrategy --> MockResponses
     end
 ```
 
