@@ -125,28 +125,81 @@ graph TD
     PD --> APPT[Appointments]
     PD --> HR[Health Records]
     PD --> CS[Cultural Safety]
+    PD --> AID[AI Doctor]
     
     HPD --> PM[Patient Management]
     HPD --> HAPPT[Provider Appointments]
     HPD --> PHR[Patient Health Records]
     HPD --> TP[Treatment Plans]
+    HPD --> AIA[AI Assistant]
     
     AIDI --- TFL[TensorFlow.js Models]
     CS --- LangS[Language Services]
     APPT --- Tele[Telemedicine]
     HR --- Records[Medical Records]
+    
+    AID --- NLP[NLP Engine]
+    AID --- KB[Knowledge Base]
+    AID --- Voice[Voice Interface]
+    
+    AIA --- AINLP[Provider NLP]
+    AIA --- AIEB[Evidence Base]
+    AIA --- AIDSS[Decision Support]
+```
+
+### AI Architecture
+
+```mermaid
+graph TD
+    subgraph "AI Components"
+        AI[AI Core Systems]
+        AI --> AID[AI Doctor]
+        AI --> AIA[AI Assistant]
+        AI --> Diag[Diagnostic Models]
+    end
+    
+    subgraph "AI Doctor - Patient Facing"
+        AID --> Converse[Conversational UI]
+        AID --> Symptom[Symptom Analysis]
+        AID --> Educat[Health Education]
+        AID --> Action[Action Management]
+        
+        Converse --> LangModel[Google Gemini]
+        Symptom --> TFL[TensorFlow.js]
+        Action --> Calendar[Appointment Scheduling]
+        Action --> Meds[Medication Reminders]
+    end
+    
+    subgraph "AI Assistant - Provider Facing"
+        AIA --> CDS[Clinical Decision Support]
+        AIA --> PatMgmt[Patient Management]
+        AIA --> Evidence[Evidence Base]
+        AIA --> TreatRec[Treatment Recommendations]
+        
+        CDS --> DDx[Differential Diagnosis]
+        Evidence --> MedLit[Medical Literature]
+        Evidence --> Guidelines[Clinical Guidelines]
+        TreatRec --> Culture[Cultural Adaptation]
+    end
+    
+    Culture --> TK[Traditional Knowledge]
+    Converse --> CS[Cultural Safety Layer]
 ```
 
 ### Tech Stack
 
 - **Frontend**: React with TypeScript for type safety
 - **UI Framework**: TailwindCSS with Shadcn UI components for accessibility
-- **AI Integration**: TensorFlow.js for client-side ML capabilities
+- **AI Integration**: 
+  - TensorFlow.js for client-side ML capabilities and diagnostic models
+  - Google Gemini AI for advanced language understanding and conversational AI
+  - Custom NLP pipeline for medical context processing
 - **State Management**: Context API for global state, TanStack Query for data fetching
 - **Authentication**: Role-based (patient/provider) with local storage persistence
 - **Offline Support**: IndexedDB/localStorage for disconnected operation
 - **Internationalization**: i18next for multilingual interface
 - **Accessibility**: WCAG 2.1 AA compliant with voice command support
+- **Voice Integration**: Google Cloud Text-to-Speech for multilingual voice synthesis
 
 View our complete [System Architecture Document](docs/architecture.md) for a detailed overview, including:
 
@@ -156,6 +209,8 @@ View our complete [System Architecture Document](docs/architecture.md) for a det
 - Security architecture
 - Cultural integration design
 - AI model architecture
+- [AI Assistant architecture](docs/ai-assistant.md)
+- [AI Doctor architecture](docs/ai-doctor.md)
 
 ## 📊 Impact Metrics
 
