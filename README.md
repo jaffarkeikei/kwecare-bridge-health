@@ -1,14 +1,12 @@
 # KweCare: Healing Without Borders
 
-![KweCare Logo](assets/logo.png)
-
 ## 🌟 Overview
 
 KweCare is a revolutionary healthcare application designed to bridge healthcare gaps for remote Indigenous communities in Canada. By combining offline AI diagnostics, satellite telemedicine, and culturally sensitive design, KweCare ensures equitable access to specialized healthcare for populations facing geographic, technological, and cultural barriers.
 
 ## 🏥 The Problem
 
-Remote Indigenous communities in Canada face significant healthcare challenges:
+Remote Indigenous and underserved communities in Canada face significant healthcare challenges:
 
 - **3x higher rates** of diabetes and chronic diseases
 - **Limited access** to specialists (endocrinologists, cardiologists, etc.)
@@ -16,7 +14,7 @@ Remote Indigenous communities in Canada face significant healthcare challenges:
 - **Unreliable internet connectivity**, making traditional telemedicine ineffective
 - **Health sovereignty concerns** with management of sensitive health data
 
-## 💡 Our Solution
+## 💡 The Solution
 
 KweCare addresses these challenges through four integrated components:
 
@@ -45,6 +43,24 @@ KweCare addresses these challenges through four integrated components:
 - **Seamless Bridging**: Smooth data sharing between patients and providers with explicit consent controls
 - **Treatment Planning**: Collaborative care plan development with cultural considerations
 
+## 🤖 AI Assistants
+
+KweCare features two specialized AI assistants designed to support different user needs:
+
+### 1. AI Doctor (Patient-Facing)
+- **Personalized Health Advice**: Provides contextual health guidance based on patient records
+- **Patient-Friendly Language**: Uses accessible explanations with cultural sensitivity
+- **Lifestyle Guidance**: Offers practical wellness recommendations and medication adherence support
+- **Empathetic Interaction**: Warm, supportive tone designed for patient comfort and trust
+- **Health Education**: Explains medical concepts in culturally relevant ways
+
+### 2. Provider Assistant (Healthcare Provider-Facing)
+- **Clinical Decision Support**: Offers evidence-based insights for diagnosis and treatment
+- **Patient Management Tools**: Helps track patient progress and identify intervention needs
+- **Medical Knowledge Integration**: Connects to current medical literature and best practices
+- **Cultural Context Engine**: Provides cultural considerations relevant to patient care
+- **Treatment Planning**: Assists with developing personalized care plans respecting traditional approaches
+
 ## 🧠 Key Innovations
 
 1. **Dual-Role Architecture**: Seamless switching between patient and healthcare provider experiences
@@ -66,10 +82,10 @@ KweCare addresses these challenges through four integrated components:
 
 ```bash
 # Clone the repository
-git clone https://github.com/jaffarkeikei/KweCare.git
+git clone https://github.com/jaffarkeikei/kwecare-bridge-health.git
 
 # Navigate to project directory
-cd KweCare
+cd kwecare-bridge-health
 
 # Install dependencies
 npm install
@@ -170,14 +186,6 @@ View our complete [System Architecture Document](docs/architecture.md) for a det
 - **Treatment Planning**: Collaborative care plan development
 - **Patient Monitoring**: Health status tracking and alert management
 
-## 📱 Application Screens
-
-<div align="center">
-  <img src="docs/images/symptom-checker-cree.png" alt="Symptom Checker in Cree" width="200"/>
-  <img src="docs/images/telemedicine-interface.png" alt="Telemedicine Interface" width="200"/>
-  <img src="docs/images/health-dashboard.png" alt="Community Health Dashboard" width="200"/>
-  <img src="docs/images/cultural-safety-center.png" alt="Cultural Safety Center" width="200"/>
-</div>
 
 ## 🔄 Technical Innovations
 
@@ -238,6 +246,8 @@ Explore our detailed documentation for more information:
 - [Architecture Overview](docs/architecture.md)
 - [Data Flow & Security](docs/data-flow.md)
 - [AI Models & Capabilities](docs/ai-models.md)
+- [AI Assistant](docs/ai-assistant.md)
+- [AI Doctor](docs/ai-doctor.md)
 - [Localization Guide](docs/localization.md)
 - [Cultural Integration](docs/cultural-integration.md)
 - [Developer Guide](docs/developer-guide.md)
@@ -250,20 +260,9 @@ KweCare redefines healthcare accessibility by centering Indigenous sovereignty, 
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgements
-
-We extend our deepest gratitude to the Indigenous communities, Elders, and knowledge keepers who have guided this project with their wisdom and expertise. This application would not be possible without their contributions and guidance.
-
-### Cultural Advisors
-- Margaret Francis, Cree Elder, Traditional Medicine Specialist
-- Joseph Beardy, Ojibwe Knowledge Keeper, Ceremonial Knowledge
-- Sarah Qitsualik, Inuit Elder, Mental Health & Traditional Counseling
-
 ## 🤝 Get Involved
 
 We welcome contributions from developers, healthcare professionals, and Indigenous community members. To get involved:
 
-- [Report issues](https://github.com/jaffarkeikei/KweCare/issues)
-- [Submit pull requests](https://github.com/jaffarkeikei/KweCare/pulls)
-- [Join our community Discord](https://discord.gg/kwecare)
-- [Contact us for partnership opportunities](mailto:info@kwecare.org) 
+- [Report issues](https://github.com/jaffarkeikei/kwecare-bridge-health/issues)
+- [Submit pull requests](https://github.com/jaffarkeikei/kwecare-bridge-health/pulls)
